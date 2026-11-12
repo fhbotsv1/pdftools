@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MultiTool"
+rootProject.name = "PDF Tools"
 include(":app")

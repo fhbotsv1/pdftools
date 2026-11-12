@@ -1,50 +1,14 @@
-# MultiTool
+# PDF Tools
 
-An all-in-one Android utility app built with Kotlin and Jetpack Compose.
+An Android PDF utility application built with Kotlin and Jetpack Compose.
 
-## Project status
+## App sections
 
-**Stage 1 — Project foundation and dashboard**
-- [x] Android Gradle project configuration
-- [x] Kotlin + Jetpack Compose + Material 3
-- [x] Modern dark dashboard
-- [x] Tool catalogue with category navigation
-- [x] Measurement, sensor, calculator and phone-tool categories
-- [x] Settings screen placeholder
-- [x] Dedicated application ID: `com.fhbotsv1.multitool`
-- [ ] Build and verify on a physical Android device
-
-## Planned tools
-
-### Measurement
-- GPS speedometer
-- Bubble level
-- Screen ruler with calibration
-- Protractor
-- AR measurement
-- GPS distance meter
-
-### Sensors
-- Digital compass
-- Magnetic field detector (magnetometer)
-- Magnetic metal detector
-- Ambient light meter
-- Sound level meter
-- Barometer / altimeter
-- Vibration meter
-
-### Calculators
-- Stopwatch
-- Countdown timer
-- Unit converter
-
-### Phone tools
-- Flashlight, strobe and SOS
-- QR and barcode scanner
-- Camera color detector
-- Screen and touch tester
-
-Tool availability depends on the hardware and sensors supported by the Android device.
+- **Favorites** — quick access to starred PDF tools
+- **Create** — Images to PDF, Text to PDF, Web to PDF, Word to PDF
+- **Edit** — Merge PDF, Split PDF, Reorder / Rotate Pages, Cut Page, Compress PDF, Extract Images, PDF to Text
+- **Annotate** — Add Watermark, Add Page Number
+- **Secure** — Add Password, Remove Password
 
 ## Technical stack
 
@@ -55,13 +19,12 @@ Tool availability depends on the hardware and sensors supported by the Android d
 - Minimum Android version: Android 8.0 (API 26)
 - Compile SDK: 36
 - JDK: 17
+- Target ABI: arm64-v8a
 
 ## Development approach
 
-The app is developed in stages. Each tool will be implemented and tested independently before moving to the next stage. Sensor-based tools will check hardware availability and show a clear unsupported-device state when a required sensor is missing.
+The app is developed incrementally. The dashboard and navigation are established first. Each PDF operation will then be implemented and tested independently with real PDF files. File access will use Android's Storage Access Framework so users choose the documents they want to process without broad storage permissions.
 
-## Sensor measurement notes
+## Security and privacy
 
-The magnetic detector uses the phone's magnetometer and reports magnetic flux density in microtesla (µT). It measures magnetic fields and is not a general-purpose RF or radiation detector. Readings are affected by the phone, nearby magnets, metal objects and device calibration.
-
-Sound level readings from a phone microphone are estimates unless the device and microphone are calibrated. AR measurement requires a compatible ARCore device.
+PDF processing should happen on-device wherever practical. Password removal will only be supported when the user can provide the document's existing password or otherwise has legitimate access. The app will not attempt to bypass unknown passwords or encryption.
