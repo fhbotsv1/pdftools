@@ -63,6 +63,8 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
     var settings by remember { mutableStateOf(readImagePdfSettings(preferences)) }
     var selectedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var showConfiguration by remember { mutableStateOf(false) }
+    var showImageManager by remember { mutableStateOf(false) }
+    var addingImages by remember { mutableStateOf(false) }
     var showDefaultChoice by remember { mutableStateOf(false) }
     var showFirstSavePrompt by remember { mutableStateOf(false) }
     var updateDefaults by remember { mutableStateOf(false) }
@@ -137,11 +139,20 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
         contract = ActivityResultContracts.OpenMultipleDocuments()
     ) { images ->
         if (images.isNotEmpty()) {
-            selectedImages = images
+            selectedImages = if (addingImages) {
+                (selectedImages + images).distinct()
+            } else {
+                images
+            }
+            addingImages = false
             status = null
-            settings = readImagePdfSettings(preferences)
-            updateDefaults = false
-            if (hasDefaults) showDefaultChoice = true else showConfiguration = true
+            if (!showConfiguration && !showImageManager) {
+                settings = readImagePdfSettings(preferences)
+                updateDefaults = false
+                if (hasDefaults) showDefaultChoice = true else showConfiguration = true
+            }
+        } else {
+            addingImages = false
         }
     }
 
@@ -169,12 +180,24 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
                     modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())
                         .padding(horizontal = 18.dp)
                 ) {
-                    Text(
-                        "${selectedImages.size} image(s) selected",
-                        color = Color.White,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "${selectedImages.size} image(s) selected",
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(
+                            onClick = { showImageManager = true },
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Text("Change", color = ImagePdfAccent, fontWeight = FontWeight.Bold)
+                        }
+                    }
                     Spacer(Modifier.height(5.dp))
                     Text("All layout options are available together below.", color = ImagePdfMuted, fontSize = 12.sp)
                     Spacer(Modifier.height(16.dp))
@@ -315,6 +338,64 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 8.dp)
                 )
             }
+        }
+
+
+        if (showImageManager) {
+            AlertDialog(
+                onDismissRequest = { showImageManager = false },
+                containerColor = ImagePdfSurface,
+                title = { Text("Manage selected images", color = Color.White) },
+                text = {
+                    Column(
+                        modifier = Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())
+                    ) {
+                        Text(
+                            "${selectedImages.size} image(s) selected",
+                            color = ImagePdfMuted,
+                            fontSize = 12.sp
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        selectedImages.forEachIndexed { index, uri ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    "Image ${index + 1}",
+                                    color = Color.White,
+                                    fontSize = 14.sp,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                TextButton(
+                                    onClick = { selectedImages = selectedImages.toMutableList().also { it.remove(uri) } }
+                                ) {
+                                    Text("Remove", color = Color(0xFFFF9B9B))
+                                }
+                            }
+                        }
+                        if (selectedImages.isEmpty()) {
+                            Text("No images selected. Add at least one image to continue.", color = ImagePdfMuted)
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showImageManager = false
+                            addingImages = true
+                            imagePicker.launch(arrayOf("image/*"))
+                        }
+                    ) {
+                        Text("Add images", color = ImagePdfAccent)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showImageManager = false }) {
+                        Text("Done", color = Color.White)
+                    }
+                }
+            )
         }
 
         if (showDefaultChoice) {
