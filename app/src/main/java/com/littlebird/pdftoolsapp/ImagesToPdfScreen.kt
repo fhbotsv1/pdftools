@@ -7,6 +7,7 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.pdf.PdfDocument
+import android.media.ExifInterface
 import android.net.Uri
 import android.graphics.Color as AndroidColor
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -234,7 +235,7 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
                         )
                     }
 
-                    if (hasDefaults) {
+                    if (hasDefaults || hasAskedAboutDefaults) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -244,7 +245,11 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
                                 onCheckedChange = { updateDefaults = it },
                                 colors = CheckboxDefaults.colors(checkedColor = ImagePdfAccent)
                             )
-                            Text("Update my saved default settings", color = Color.White, fontSize = 13.sp)
+                            Text(
+                                if (hasDefaults) "Update my saved default settings" else "Save these settings as default",
+                                color = Color.White,
+                                fontSize = 13.sp
+                            )
                         }
                     }
                     Spacer(Modifier.height(12.dp))
@@ -467,6 +472,13 @@ private fun buildImagePdf(
 }
 
 private fun decodePdfImage(context: Context, uri: Uri): Bitmap? {
+    val exifOrientation = context.contentResolver.openInputStream(uri)?.use { input ->
+        ExifInterface(input).getAttributeInt(
+            ExifInterface.TAG_ORIENTATION,
+            ExifInterface.ORIENTATION_NORMAL
+        )
+    } ?: ExifInterface.ORIENTATION_NORMAL
+
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
     context.contentResolver.openInputStream(uri)?.use {
         BitmapFactory.decodeStream(it, null, bounds)
@@ -477,8 +489,20 @@ private fun decodePdfImage(context: Context, uri: Uri): Bitmap? {
     while (longestSide / sampleSize > 3000) sampleSize *= 2
 
     val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
-    return context.contentResolver.openInputStream(uri)?.use {
+    val decoded = context.contentResolver.openInputStream(uri)?.use {
         BitmapFactory.decodeStream(it, null, options)
+    } ?: return null
+
+    val rotation = when (exifOrientation) {
+        ExifInterface.ORIENTATION_ROTATE_90 -> 90f
+        ExifInterface.ORIENTATION_ROTATE_180 -> 180f
+        ExifInterface.ORIENTATION_ROTATE_270 -> 270f
+        else -> 0f
+    }
+    if (rotation == 0f) return decoded
+    val matrix = Matrix().apply { postRotate(rotation) }
+    return Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true).also {
+        if (it !== decoded) decoded.recycle()
     }
 }
 
