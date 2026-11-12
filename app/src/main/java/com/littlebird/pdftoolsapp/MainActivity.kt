@@ -197,7 +197,7 @@ private fun PdfToolsApp() {
                     }
                 }
             } else if (selectedTool!!.name == "Images to PDF") {
-                ImagesToPdfScreen(onBack = { selectedTool = null })
+                ImagesToPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
