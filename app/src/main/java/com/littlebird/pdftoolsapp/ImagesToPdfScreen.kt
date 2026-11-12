@@ -622,15 +622,13 @@ private fun orientBitmap(
     pageOrientation: String,
     pageSize: String
 ): Bitmap {
-    var rotate = false
-    when (imageOrientation) {
-        "Portrait" -> rotate = source.width > source.height
-        "Landscape" -> rotate = source.height > source.width
-        "Auto" -> {
-            if (pageOrientation == "Portrait") rotate = source.width > source.height
-            if (pageOrientation == "Landscape") rotate = source.height > source.width
-            if (pageOrientation == "Auto" && pageSize != "Original") rotate = false
-        }
+    // Image orientation controls the image itself, not the paper.
+    // Keep the source orientation for Auto. Explicit Portrait/Landscape only
+    // rotates when the user has deliberately requested that image orientation.
+    var rotate = when (imageOrientation) {
+        "Portrait" -> source.width > source.height
+        "Landscape" -> source.height > source.width
+        else -> false
     }
     if (!rotate) return source
     val matrix = Matrix().apply { postRotate(90f) }
