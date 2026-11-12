@@ -49,7 +49,7 @@ private data class ImagePdfSettings(
 )
 
 @Composable
-fun ImagesToPdfScreen(onBack: () -> Unit) {
+fun ImagesToPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val scope = rememberCoroutineScope()
     val preferences = remember {
@@ -157,7 +157,7 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
     }
 
     MaterialTheme(colorScheme = darkColorScheme(primary = ImagePdfAccent, surface = ImagePdfSurface)) {
-        Column(modifier = Modifier.fillMaxSize().background(ImagePdfBackground)) {
+        Column(modifier = modifier.fillMaxSize().background(ImagePdfBackground)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
