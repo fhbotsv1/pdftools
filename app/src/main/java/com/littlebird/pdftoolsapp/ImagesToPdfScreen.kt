@@ -3,6 +3,8 @@ package com.littlebird.pdftoolsapp
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
+import android.os.Build
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
@@ -139,6 +141,16 @@ fun ImagesToPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         contract = ActivityResultContracts.OpenMultipleDocuments()
     ) { images ->
         if (images.isNotEmpty()) {
+            images.forEach { uri ->
+                try {
+                    context.contentResolver.takePersistableUriPermission(
+                        uri,
+                        android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    )
+                } catch (_: SecurityException) {
+                    // Some document providers grant temporary access only.
+                }
+            }
             selectedImages = if (addingImages) {
                 (selectedImages + images).distinct()
             } else {
@@ -553,26 +565,43 @@ private fun buildImagePdf(
 }
 
 private fun decodePdfImage(context: Context, uri: Uri): Bitmap? {
-    val exifOrientation = context.contentResolver.openInputStream(uri)?.use { input ->
-        ExifInterface(input).getAttributeInt(
-            ExifInterface.TAG_ORIENTATION,
-            ExifInterface.ORIENTATION_NORMAL
-        )
-    } ?: ExifInterface.ORIENTATION_NORMAL
+    val resolver = context.contentResolver
 
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    context.contentResolver.openInputStream(uri)?.use {
-        BitmapFactory.decodeStream(it, null, bounds)
-    } ?: return null
+    // Read EXIF when the format/provider supports it. Some formats (for example HEIC)
+    // carry orientation in the decoder itself, so EXIF failure must not block decoding.
+    val exifOrientation = try {
+        resolver.openInputStream(uri)?.use { input ->
+            ExifInterface(input).getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                ExifInterface.ORIENTATION_NORMAL
+            )
+        } ?: ExifInterface.ORIENTATION_NORMAL
+    } catch (_: Exception) {
+        ExifInterface.ORIENTATION_NORMAL
+    }
 
-    var sampleSize = 1
-    val longestSide = max(bounds.outWidth, bounds.outHeight)
-    while (longestSide / sampleSize > 3000) sampleSize *= 2
+    val decoded = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        val source = ImageDecoder.createSource(resolver, uri)
+        ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+            decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+            val longestSide = max(info.size.width, info.size.height)
+            val sampleSize = max(1, (longestSide + 2999) / 3000)
+            decoder.setTargetSampleSize(sampleSize)
+        }
+    } else {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            ?: return null
 
-    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
-    val decoded = context.contentResolver.openInputStream(uri)?.use {
-        BitmapFactory.decodeStream(it, null, options)
-    } ?: return null
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        var sampleSize = 1
+        val longestSide = max(bounds.outWidth, bounds.outHeight)
+        while (longestSide / sampleSize > 3000) sampleSize *= 2
+
+        val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, options) }
+            ?: return null
+    }
 
     val rotation = when (exifOrientation) {
         ExifInterface.ORIENTATION_ROTATE_90 -> 90f
