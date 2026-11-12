@@ -44,7 +44,6 @@ private val pdfTools = listOf(
     PdfTool("Text to PDF", "Turn typed text into a PDF document", "T", "Create"),
     PdfTool("Web to PDF", "Save a web page as a PDF", "◎", "Create"),
     PdfTool("Word to PDF", "Convert Word documents into PDF", "W", "Create"),
-
     PdfTool("Merge PDF", "Combine multiple PDF files", "⊕", "Edit"),
     PdfTool("Split PDF", "Separate a PDF into smaller files", "⇱", "Edit"),
     PdfTool("Reorder / Rotate Pages", "Change page order or orientation", "↻", "Edit"),
@@ -52,10 +51,8 @@ private val pdfTools = listOf(
     PdfTool("Compress PDF", "Reduce PDF file size", "⇣", "Edit"),
     PdfTool("Extract Images", "Save images embedded in a PDF", "▣", "Edit"),
     PdfTool("PDF to Text", "Extract selectable text from a PDF", "≡", "Edit"),
-
     PdfTool("Add Watermark", "Place text or an image over PDF pages", "◇", "Annotate"),
-    PdfTool("Add Page Number", "Insert page numbers into a PDF", "#", "Annotate"),
-
+    PdfTool("Add Page Number", "Insert page numbers into PDF pages", "#", "Annotate"),
     PdfTool("Add Password", "Protect a PDF with a password", "🔒", "Secure"),
     PdfTool("Remove Password", "Remove protection from an accessible PDF", "🔓", "Secure")
 )
@@ -135,17 +132,13 @@ private fun PdfToolsApp() {
                                 Text("PDF", color = AppAccent, fontSize = 17.sp, fontWeight = FontWeight.Black)
                             }
                         }
-
                         Spacer(Modifier.height(20.dp))
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
                             colors = CardDefaults.cardColors(containerColor = Color(0xFF392630))
                         ) {
-                            Row(
-                                Modifier.fillMaxWidth().padding(18.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
+                            Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text("15 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     Spacer(Modifier.height(6.dp))
@@ -156,10 +149,7 @@ private fun PdfToolsApp() {
                         }
                         Spacer(Modifier.height(22.dp))
                         Text(
-                            when (selectedSection) {
-                                "Favorites" -> "Your Favorites"
-                                else -> "$selectedSection tools"
-                            },
+                            if (selectedSection == "Favorites") "Your Favorites" else "$selectedSection tools",
                             color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold
                         )
                         Text(
@@ -173,7 +163,6 @@ private fun PdfToolsApp() {
                             color = MutedText, fontSize = 12.sp
                         )
                     }
-
                     if (visibleTools.isEmpty()) {
                         Column(
                             Modifier.fillMaxSize().padding(28.dp),
@@ -199,8 +188,7 @@ private fun PdfToolsApp() {
                                     tool = tool,
                                     favorite = tool.name in favorites,
                                     onFavorite = {
-                                        if (tool.name in favorites) favorites.remove(tool.name)
-                                        else favorites.add(tool.name)
+                                        if (tool.name in favorites) favorites.remove(tool.name) else favorites.add(tool.name)
                                     },
                                     onClick = { selectedTool = tool }
                                 )
@@ -208,6 +196,8 @@ private fun PdfToolsApp() {
                         }
                     }
                 }
+            } else if (selectedTool!!.name == "Images to PDF") {
+                ImagesToPdfScreen(onBack = { selectedTool = null })
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
