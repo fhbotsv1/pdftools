@@ -149,8 +149,7 @@ private fun PdfToolsApp() {
                                 Column(Modifier.weight(1f)) {
                                     Text("15 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     Spacer(Modifier.height(6.dp))
-                                    Text("Create, edit and
-protect your PDFs.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                                    Text("Create, edit and protect your PDFs.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                                 }
                                 Text("▤", color = AppAccent, fontSize = 48.sp)
                             }
