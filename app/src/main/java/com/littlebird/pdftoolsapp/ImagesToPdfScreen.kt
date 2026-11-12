@@ -421,9 +421,7 @@ private fun buildImagePdf(
     val output = ByteArrayOutputStream()
     try {
         imageUris.forEachIndexed { index, uri ->
-            val input = context.contentResolver.openInputStream(uri)
-                ?: error("Could not read image ${index + 1}.")
-            val source = input.use { BitmapFactory.decodeStream(it) }
+            val source = decodePdfImage(context, uri)
                 ?: error("Image ${index + 1} could not be decoded.")
             val bitmap = orientBitmap(source, settings.imageOrientation, settings.pageOrientation, settings.pageSize)
             if (bitmap !== source) source.recycle()
@@ -465,6 +463,22 @@ private fun buildImagePdf(
     } finally {
         document.close()
         output.close()
+    }
+}
+
+private fun decodePdfImage(context: Context, uri: Uri): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, bounds)
+    } ?: return null
+
+    var sampleSize = 1
+    val longestSide = max(bounds.outWidth, bounds.outHeight)
+    while (longestSide / sampleSize > 3000) sampleSize *= 2
+
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    return context.contentResolver.openInputStream(uri)?.use {
+        BitmapFactory.decodeStream(it, null, options)
     }
 }
 
