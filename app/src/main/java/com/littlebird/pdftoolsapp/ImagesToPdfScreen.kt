@@ -3,7 +3,6 @@ package com.littlebird.pdftoolsapp
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
@@ -13,6 +12,7 @@ import android.graphics.Color as AndroidColor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -54,8 +54,10 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
     val preferences = remember {
         context.getSharedPreferences("image_to_pdf_preferences", Context.MODE_PRIVATE)
     }
-    val hasDefaults = remember { preferences.getBoolean("has_defaults", false) }
-    val hasAskedAboutDefaults = remember { preferences.getBoolean("asked_about_defaults", false) }
+    var hasDefaults by remember { mutableStateOf(preferences.getBoolean("has_defaults", false)) }
+    var hasAskedAboutDefaults by remember {
+        mutableStateOf(preferences.getBoolean("asked_about_defaults", false))
+    }
 
     var settings by remember { mutableStateOf(readImagePdfSettings(preferences)) }
     var selectedImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -77,6 +79,7 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
             .putBoolean("keep_aspect_ratio", value.keepAspectRatio)
             .putString("margins", value.margins)
             .apply()
+        hasDefaults = true
     }
 
     val savePdfLauncher = rememberLauncherForActivityResult(
@@ -142,9 +145,7 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
     }
 
     MaterialTheme(colorScheme = darkColorScheme(primary = ImagePdfAccent, surface = ImagePdfSurface)) {
-        Column(
-            modifier = Modifier.fillMaxSize().background(ImagePdfBackground)
-        ) {
+        Column(modifier = Modifier.fillMaxSize().background(ImagePdfBackground)) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -210,18 +211,19 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                     ) {
-                        Column(Modifier.padding(14.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Column(Modifier.weight(1f)) {
-                                    Text("Keep aspect ratio", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                                    Text("Prevent images from looking stretched or squashed", color = ImagePdfMuted, fontSize = 11.sp)
-                                }
-                                Checkbox(
-                                    checked = settings.keepAspectRatio,
-                                    onCheckedChange = { settings = settings.copy(keepAspectRatio = it) },
-                                    colors = CheckboxDefaults.colors(checkedColor = ImagePdfAccent)
-                                )
+                        Row(
+                            Modifier.fillMaxWidth().padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Keep aspect ratio", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                                Text("Prevent images from looking stretched or squashed", color = ImagePdfMuted, fontSize = 11.sp)
                             }
+                            Checkbox(
+                                checked = settings.keepAspectRatio,
+                                onCheckedChange = { settings = settings.copy(keepAspectRatio = it) },
+                                colors = CheckboxDefaults.colors(checkedColor = ImagePdfAccent)
+                            )
                         }
                     }
                     SettingsGroup("Page margins", "Space between the image and paper edge") {
@@ -334,6 +336,7 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
                 onDismissRequest = {
                     showFirstSavePrompt = false
                     preferences.edit().putBoolean("asked_about_defaults", true).apply()
+                    hasAskedAboutDefaults = true
                     createPdf(settings)
                 },
                 containerColor = ImagePdfSurface,
@@ -343,6 +346,7 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
                     TextButton(onClick = {
                         saveSettingsAsDefault(settings)
                         preferences.edit().putBoolean("asked_about_defaults", true).apply()
+                        hasAskedAboutDefaults = true
                         showFirstSavePrompt = false
                         createPdf(settings)
                     }) { Text("Save as default", color = ImagePdfAccent) }
@@ -350,6 +354,7 @@ fun ImagesToPdfScreen(onBack: () -> Unit) {
                 dismissButton = {
                     TextButton(onClick = {
                         preferences.edit().putBoolean("asked_about_defaults", true).apply()
+                        hasAskedAboutDefaults = true
                         showFirstSavePrompt = false
                         createPdf(settings)
                     }) { Text("Not now", color = Color.White) }
@@ -496,7 +501,7 @@ private fun getPageDimensions(pageSize: String, orientation: String, bitmap: Bit
     val isLandscape = when (orientation) {
         "Landscape" -> true
         "Portrait" -> false
-        else -> if (pageSize == "Original") bitmap.width >= bitmap.height else bitmap.width >= bitmap.height
+        else -> bitmap.width >= bitmap.height
     }
     val shouldSwap = if (isLandscape) base.first < base.second else base.first > base.second
     return if (shouldSwap) base.second to base.first else base
