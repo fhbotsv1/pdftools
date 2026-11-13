@@ -3,6 +3,7 @@ package com.littlebird.pdftoolsapp
 import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -57,46 +58,49 @@ fun PdfImageExtractScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var isWorking by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
     var exportQueue by remember { mutableStateOf<List<ExportImage>>(emptyList()) }
-    var exportIndex by remember { mutableIntStateOf(0) }
     var queueActive by remember { mutableStateOf(false) }
 
-    val saveLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("image/png")
-    ) { destination ->
-        if (destination == null) {
+    val folderPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocumentTree()
+    ) { folderUri ->
+        if (folderUri == null) {
             queueActive = false
-            status = "Saving cancelled. Previously saved images are unchanged."
+            status = "Folder selection cancelled."
         } else {
-            val item = exportQueue.getOrNull(exportIndex)
-            if (item == null) {
-                queueActive = false
-            } else {
-                scope.launch {
+            scope.launch {
+                try {
                     try {
-                        withContext(Dispatchers.IO) {
+                        context.contentResolver.takePersistableUriPermission(
+                            folderUri,
+                            android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                        )
+                    } catch (_: SecurityException) {
+                        // The selected folder remains available for this operation.
+                    }
+                    val savedCount = withContext(Dispatchers.IO) {
+                        var count = 0
+                        for (item in exportQueue) {
+                            val destination = DocumentsContract.createDocument(
+                                context.contentResolver,
+                                folderUri,
+                                "image/png",
+                                item.fileName
+                            ) ?: error("Could not create ${item.fileName} in the selected folder.")
                             context.contentResolver.openOutputStream(destination)?.use {
                                 it.write(item.bytes)
-                            } ?: error("Could not open the selected save location.")
+                            } ?: error("Could not write ${item.fileName}.")
+                            count++
                         }
-                        exportIndex++
-                        if (exportIndex >= exportQueue.size) {
-                            queueActive = false
-                            status = "Saved all ${exportQueue.size} image(s)."
-                        } else {
-                            status = "Saved ${exportIndex} of ${exportQueue.size} image(s). Choose the next save location."
-                        }
-                    } catch (error: Exception) {
-                        queueActive = false
-                        status = "Could not save image: ${error.localizedMessage ?: "Unknown error"}"
+                        count
                     }
+                    status = "Saved all $savedCount image(s) in the selected folder."
+                } catch (error: Exception) {
+                    status = "Could not save all images: ${error.localizedMessage ?: "Unknown error"}. Any images saved before the error remain in the folder."
+                } finally {
+                    queueActive = false
                 }
             }
-        }
-    }
-
-    LaunchedEffect(queueActive, exportIndex, exportQueue) {
-        if (queueActive && exportIndex < exportQueue.size) {
-            saveLauncher.launch(exportQueue[exportIndex].fileName)
         }
     }
 
@@ -160,9 +164,9 @@ fun PdfImageExtractScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             return
         }
         exportQueue = items
-        exportIndex = 0
         queueActive = true
-        status = "Preparing to save ${items.size} image(s)."
+        status = "Choose a folder to save all ${items.size} image(s)."
+        folderPicker.launch(null)
     }
 
     fun startExport() {
