@@ -51,6 +51,7 @@ private val pdfTools = listOf(
     PdfTool("Metadata Editor", "Edit or remove PDF document information", "ⓘ", "Edit"),
     PdfTool("PDF to Word", "Convert PDF text into an editable DOCX file", "W", "Edit"),
     PdfTool("PDF to Excel", "Extract PDF rows and tables into XLSX", "▦", "Edit"),
+    PdfTool("Permanent Redaction", "Permanently remove selected page areas", "▰", "Edit"),
     PdfTool("Split PDF", "Separate a PDF into smaller files", "⇱", "Edit"),
     PdfTool("Reorder / Rotate", "Change page order or orientation", "↻", "Edit"),
     PdfTool("Cut Page", "Crop page margins and visible area", "⌗", "Edit"),
@@ -151,7 +152,7 @@ private fun PdfToolsApp() {
                         ) {
                             Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("22 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("23 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     Spacer(Modifier.height(6.dp))
                                     Text("Create, edit and protect your PDFs.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                                 }
@@ -225,6 +226,8 @@ private fun PdfToolsApp() {
                 PdfOfficeExportScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding), exportType = PdfOfficeExportType.WORD)
             } else if (selectedTool!!.name == "PDF to Excel") {
                 PdfOfficeExportScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding), exportType = PdfOfficeExportType.EXCEL)
+            } else if (selectedTool!!.name == "Permanent Redaction") {
+                PermanentRedactionScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Delete Pages") {
                 DeletePagesScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Merge PDF") {
