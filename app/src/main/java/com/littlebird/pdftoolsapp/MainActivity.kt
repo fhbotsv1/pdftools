@@ -223,6 +223,8 @@ private fun PdfToolsApp() {
                 OcrPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Annotate PDF") {
                 AnnotatePdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "Add Password") {
+                AddPasswordPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
