@@ -40,7 +40,6 @@ import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 import com.tom_roush.pdfbox.pdmodel.PDDocument
 import com.tom_roush.pdfbox.pdmodel.PDPage
 import com.tom_roush.pdfbox.pdmodel.common.PDRectangle
-import com.tom_roush.pdfbox.pdmodel.graphics.image.JPEGFactory
 import com.tom_roush.pdfbox.pdmodel.PDPageContentStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -135,7 +134,12 @@ fun PermanentRedactionScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
                                                 val pageHeight = page.height.toFloat()
                                                 val pdfPage = PDPage(PDRectangle(pageWidth, pageHeight))
                                                 result.addPage(pdfPage)
-                                                val image = JPEGFactory.createFromImage(result, bitmap, 0.96f)
+                                                val imageBytes = ByteArrayOutputStream().use { buffer ->
+                                                    bitmap.compress(Bitmap.CompressFormat.JPEG, 96, buffer)
+                                                    buffer.toByteArray()
+                                                }
+                                                val image = com.tom_roush.pdfbox.pdmodel.graphics.image.PDImageXObject
+                                                    .createFromByteArray(result, imageBytes, "redacted_page_${index + 1}")
                                                 PDPageContentStream(result, pdfPage).use { stream ->
                                                     stream.drawImage(image, 0f, 0f, pageWidth, pageHeight)
                                                 }
@@ -144,7 +148,7 @@ fun PermanentRedactionScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
                                         }
                                     }
                                 }
-                                result.documentInformation.title = "Redacted document"
+                                result.documentInformation.setTitle("Redacted document")
                                 result.save(out)
                             }
                         }
