@@ -51,8 +51,7 @@ private val pdfTools = listOf(
     PdfTool("To Image / Extract", "Convert PDF pages or extract embedded images", "▣", "Edit"),
     PdfTool("PDF to Text", "Extract selectable text from a PDF", "≡", "Edit"),
     PdfTool("OCR PDF", "Recognise text in scanned PDF pages", "⌕", "Edit"),
-    PdfTool("Add Watermark", "Place text or an image over PDF pages", "◇", "Annotate"),
-    PdfTool("Add Page Number", "Insert page numbers into PDF pages", "#", "Annotate"),
+    PdfTool("Annotate PDF", "Add a watermark and page numbers to PDF pages", "◇", "Annotate"),
     PdfTool("Add Password", "Protect a PDF with a password", "🔒", "Secure"),
     PdfTool("Remove Password", "Remove protection from an accessible PDF", "🔓", "Secure")
 )
@@ -140,7 +139,7 @@ private fun PdfToolsApp() {
                         ) {
                             Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("15 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("14 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     Spacer(Modifier.height(6.dp))
                                     Text("Create, edit and protect your PDFs.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                                 }
@@ -218,6 +217,8 @@ private fun PdfToolsApp() {
                 PdfToTextScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "OCR PDF") {
                 OcrPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "Annotate PDF") {
+                AnnotatePdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
