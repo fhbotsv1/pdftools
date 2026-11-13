@@ -73,6 +73,16 @@ fun AnnotatePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var pageNumberX by remember { mutableFloatStateOf(0.42f) }
     var pageNumberY by remember { mutableFloatStateOf(0.93f) }
     var includeTotal by remember { mutableStateOf(true) }
+    var addHeader by remember { mutableStateOf(false) }
+    var headerText by remember { mutableStateOf("Your Header") }
+    var headerSize by remember { mutableFloatStateOf(12f) }
+    var headerX by remember { mutableFloatStateOf(0.38f) }
+    var headerY by remember { mutableFloatStateOf(0.04f) }
+    var addFooter by remember { mutableStateOf(false) }
+    var footerText by remember { mutableStateOf("Your Footer") }
+    var footerSize by remember { mutableFloatStateOf(10f) }
+    var footerX by remember { mutableFloatStateOf(0.38f) }
+    var footerY by remember { mutableFloatStateOf(0.94f) }
     var isWorking by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
 
@@ -107,12 +117,30 @@ fun AnnotatePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             val chosenNumberX = pageNumberX
             val chosenNumberY = pageNumberY
             val showTotal = includeTotal
+            val headerEnabled = addHeader
+            val chosenHeader = headerText.trim()
+            val chosenHeaderSize = headerSize
+            val chosenHeaderX = headerX
+            val chosenHeaderY = headerY
+            val footerEnabled = addFooter
+            val chosenFooter = footerText.trim()
+            val chosenFooterSize = footerSize
+            val chosenFooterX = footerX
+            val chosenFooterY = footerY
             if (watermarkEnabled && chosenWatermark.isBlank()) {
                 status = "Enter watermark text, or turn off the watermark option."
                 return@rememberLauncherForActivityResult
             }
             if (numbersEnabled && firstNumber == null) {
                 status = "Enter a valid starting page number."
+                return@rememberLauncherForActivityResult
+            }
+            if (headerEnabled && chosenHeader.isBlank()) {
+                status = "Enter header text, or turn off the header option."
+                return@rememberLauncherForActivityResult
+            }
+            if (footerEnabled && chosenFooter.isBlank()) {
+                status = "Enter footer text, or turn off the footer option."
                 return@rememberLauncherForActivityResult
             }
             scope.launch {
@@ -128,6 +156,8 @@ fun AnnotatePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 if (total == 0) error("The selected PDF has no pages.")
                                 document.pages.forEachIndexed { index, page ->
                                     if (watermarkEnabled) addWatermarkToPage(document, page, chosenWatermark, chosenWatermarkSize, chosenWatermarkX, chosenWatermarkY)
+                                    if (headerEnabled) addHeaderFooterToPage(document, page, chosenHeader, chosenHeaderSize, chosenHeaderX, chosenHeaderY)
+                                    if (footerEnabled) addHeaderFooterToPage(document, page, chosenFooter, chosenFooterSize, chosenFooterX, chosenFooterY)
                                     if (numbersEnabled) {
                                         val number = firstNumber!! + index
                                         val label = if (showTotal) chosenPrefix + number + " of " + total else chosenPrefix + number
@@ -172,6 +202,8 @@ fun AnnotatePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     preview = prepared.second
                     watermarkX = 0.22f; watermarkY = 0.43f
                     pageNumberX = 0.42f; pageNumberY = 0.93f
+                    headerX = 0.38f; headerY = 0.04f
+                    footerX = 0.38f; footerY = 0.94f
                     status = "Drag either text sample on the page to position it."
                 } catch (error: Exception) {
                     sourceUri = null; sourceName = null; preview = null
@@ -218,9 +250,13 @@ fun AnnotatePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 addPageNumbers,
                                 pagePrefix + ((startingNumber.toIntOrNull() ?: 1) + selectedPage) + if (includeTotal) " of " + pageCount else "",
                                 pageNumberSize, pageNumberX, pageNumberY,
-                                { x, y -> pageNumberX = x; pageNumberY = y }
+                                { x, y -> pageNumberX = x; pageNumberY = y },
+                                addHeader, headerText, headerSize, headerX, headerY,
+                                { x, y -> headerX = x; headerY = y },
+                                addFooter, footerText, footerSize, footerX, footerY,
+                                { x, y -> footerX = x; footerY = y }
                             )
-                            Text("Drag the watermark or page number on the preview to move it.", color = AnnotateMuted, fontSize = 11.sp)
+                            Text("Drag any enabled text sample on the preview to move it.", color = AnnotateMuted, fontSize = 11.sp)
                         } else {
                             Box(Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(10.dp)).background(Color(0xFF263246)), contentAlignment = Alignment.Center) {
                                 Text("Select a PDF to see a live page preview", color = AnnotateMuted, fontSize = 13.sp)
@@ -270,6 +306,40 @@ fun AnnotatePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         }
                     }
                 }
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = AnnotateSurface)) {
+                    Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Header", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("Add text at the top of every page", color = AnnotateMuted, fontSize = 11.sp)
+                            }
+                            Switch(addHeader, { addHeader = it }, enabled = !isWorking)
+                        }
+                        if (addHeader) {
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(headerText, { headerText = it }, Modifier.fillMaxWidth(), label = { Text("Header text") }, singleLine = true, enabled = !isWorking, colors = annotateTextFieldColors())
+                            Text("Text size: " + headerSize.toInt() + " pt", color = AnnotateMuted, fontSize = 12.sp)
+                            Slider(headerSize, { headerSize = it }, valueRange = 6f..36f, enabled = !isWorking, colors = SliderDefaults.colors(thumbColor = AnnotateAccent, activeTrackColor = AnnotateAccent))
+                        }
+                    }
+                }
+                Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), colors = CardDefaults.cardColors(containerColor = AnnotateSurface)) {
+                    Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text("Footer", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Text("Add text at the bottom of every page", color = AnnotateMuted, fontSize = 11.sp)
+                            }
+                            Switch(addFooter, { addFooter = it }, enabled = !isWorking)
+                        }
+                        if (addFooter) {
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedTextField(footerText, { footerText = it }, Modifier.fillMaxWidth(), label = { Text("Footer text") }, singleLine = true, enabled = !isWorking, colors = annotateTextFieldColors())
+                            Text("Text size: " + footerSize.toInt() + " pt", color = AnnotateMuted, fontSize = 12.sp)
+                            Slider(footerSize, { footerSize = it }, valueRange = 6f..36f, enabled = !isWorking, colors = SliderDefaults.colors(thumbColor = AnnotateAccent, activeTrackColor = AnnotateAccent))
+                        }
+                    }
+                }
                 Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color(0xFF302A32)), shape = RoundedCornerShape(14.dp)) {
                     Text("The chosen layout is applied to every page. Preview any page before saving. The original PDF is kept unchanged. Use basic English/Latin characters for annotation text.",
                         color = Color(0xFFFFD7D2), fontSize = 11.sp, lineHeight = 16.sp, modifier = Modifier.padding(12.dp))
@@ -283,7 +353,7 @@ fun AnnotatePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             Button(onClick = {
                 val name = (sourceName ?: "Document").substringBeforeLast('.', sourceName ?: "Document")
                 saveLauncher.launch(name + "_annotated.pdf")
-            }, enabled = sourceUri != null && (addWatermark || addPageNumbers) && !isWorking,
+            }, enabled = sourceUri != null && (addWatermark || addPageNumbers || addHeader || addFooter) && !isWorking,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = AnnotateAccent, disabledContainerColor = Color(0xFF51414A)),
                 shape = RoundedCornerShape(14.dp)) {
@@ -302,7 +372,11 @@ private fun AnnotatePagePreview(
     watermarkEnabled: Boolean, watermarkText: String, watermarkSize: Float, watermarkX: Float, watermarkY: Float,
     onWatermarkPosition: (Float, Float) -> Unit,
     pageNumberEnabled: Boolean, pageNumberText: String, pageNumberSize: Float, pageNumberX: Float, pageNumberY: Float,
-    onPageNumberPosition: (Float, Float) -> Unit
+    onPageNumberPosition: (Float, Float) -> Unit,
+    headerEnabled: Boolean, headerText: String, headerSize: Float, headerX: Float, headerY: Float,
+    onHeaderPosition: (Float, Float) -> Unit,
+    footerEnabled: Boolean, footerText: String, footerSize: Float, footerX: Float, footerY: Float,
+    onFooterPosition: (Float, Float) -> Unit
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color.White)) {
         val previewWidth = maxWidth
@@ -316,6 +390,10 @@ private fun AnnotatePagePreview(
         val latestWatermarkY by rememberUpdatedState(watermarkY)
         val latestPageNumberX by rememberUpdatedState(pageNumberX)
         val latestPageNumberY by rememberUpdatedState(pageNumberY)
+        val latestHeaderX by rememberUpdatedState(headerX)
+        val latestHeaderY by rememberUpdatedState(headerY)
+        val latestFooterX by rememberUpdatedState(footerX)
+        val latestFooterY by rememberUpdatedState(footerY)
         Box(Modifier.fillMaxWidth().height(previewHeight)) {
             Image(preview.bitmap.asImageBitmap(), "Selected PDF page preview", Modifier.fillMaxSize())
             if (watermarkEnabled && watermarkText.isNotBlank()) {
@@ -336,6 +414,26 @@ private fun AnnotatePagePreview(
                             detectDragGestures { change, drag ->
                                 change.consume()
                                 onPageNumberPosition((latestPageNumberX + drag.x / previewWidthPx).coerceIn(0f, 0.9f), (latestPageNumberY + drag.y / previewHeightPx).coerceIn(0f, 0.97f))
+                            }
+                        })
+            }
+            if (headerEnabled && headerText.isNotBlank()) {
+                Text(headerText, color = Color(0xFF333333), fontSize = (headerSize * scale).coerceIn(6f, 22f).sp, maxLines = 1,
+                    modifier = Modifier.offset(x = previewWidth * headerX, y = previewHeight * headerY)
+                        .pointerInput(preview.pageWidth, preview.pageHeight) {
+                            detectDragGestures { change, drag ->
+                                change.consume()
+                                onHeaderPosition((latestHeaderX + drag.x / previewWidthPx).coerceIn(0f, 0.9f), (latestHeaderY + drag.y / previewHeightPx).coerceIn(0f, 0.15f))
+                            }
+                        })
+            }
+            if (footerEnabled && footerText.isNotBlank()) {
+                Text(footerText, color = Color(0xFF333333), fontSize = (footerSize * scale).coerceIn(6f, 22f).sp, maxLines = 1,
+                    modifier = Modifier.offset(x = previewWidth * footerX, y = previewHeight * footerY)
+                        .pointerInput(preview.pageWidth, preview.pageHeight) {
+                            detectDragGestures { change, drag ->
+                                change.consume()
+                                onFooterPosition((latestFooterX + drag.x / previewWidthPx).coerceIn(0f, 0.9f), (latestFooterY + drag.y / previewHeightPx).coerceIn(0f, 0.97f))
                             }
                         })
             }
@@ -374,6 +472,21 @@ private fun addWatermarkToPage(document: PDDocument, page: PDPage, text: String,
         stream.beginText(); stream.setFont(font, fontSize)
         stream.setTextMatrix(Matrix.getRotateInstance(Math.toRadians(45.0), x, y))
         stream.showText(safeText); stream.endText()
+    }
+}
+
+private fun addHeaderFooterToPage(document: PDDocument, page: PDPage, text: String, fontSize: Float, xFraction: Float, yFraction: Float) {
+    val safeText = text.replace(Regex("[^\\x20-\\x7E]"), "?")
+    val box = page.mediaBox
+    val x = (box.width * xFraction).coerceIn(0f, box.width)
+    val y = (box.height * (1f - yFraction)).coerceIn(0f, box.height)
+    PDPageContentStream(document, page, PDPageContentStream.AppendMode.APPEND, true, true).use { stream ->
+        stream.setNonStrokingColor(70, 70, 70)
+        stream.beginText()
+        stream.setFont(PDType1Font.HELVETICA, fontSize)
+        stream.newLineAtOffset(x, y)
+        stream.showText(safeText)
+        stream.endText()
     }
 }
 
