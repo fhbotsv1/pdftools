@@ -150,7 +150,7 @@ fun OcrPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         scope.launch {
             isWorking = true
-            status = "Preparing OCR…"
+            status = "Recognising text on the selected pages…"
             try {
                 val extracted = withContext(Dispatchers.IO) {
                     PDFBoxResourceLoader.init(context.applicationContext)
@@ -164,7 +164,6 @@ fun OcrPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 buildString {
                                     pagesToProcess.forEachIndexed { selectedIndex, pageIndex ->
                                         if (pageIndex !in 0 until document.numberOfPages) return@forEachIndexed
-                                        status = "Recognising page ${selectedIndex + 1} of ${pagesToProcess.size}…"
                                         val bitmap = renderer.renderImage(pageIndex, 2f)
                                         val pageText = try {
                                             val image = InputImage.fromBitmap(bitmap, 0)
