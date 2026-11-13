@@ -256,14 +256,18 @@ fun HighlightMarkupScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         Spacer(Modifier.height(12.dp))
                         Text("Color", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(6.dp))
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            colors.forEach { item ->
-                                FilterChip(
-                                    selected = selectedColor == item.second,
-                                    onClick = { selectedColor = item.second },
-                                    label = { Text(item.first, fontSize = 10.sp) },
-                                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MarkupAccent, selectedLabelColor = Color.White)
-                                )
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            colors.chunked(3).forEach { colorRow ->
+                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    colorRow.forEach { item ->
+                                        FilterChip(
+                                            selected = selectedColor == item.second,
+                                            onClick = { selectedColor = item.second },
+                                            label = { Text(item.first, fontSize = 10.sp) },
+                                            colors = FilterChipDefaults.filterChipColors(selectedContainerColor = MarkupAccent, selectedLabelColor = Color.White)
+                                        )
+                                    }
+                                }
                             }
                         }
                         Spacer(Modifier.height(8.dp))
@@ -380,7 +384,6 @@ private fun drawMarkup(document: PDDocument, page: PDPage, mark: PdfMarkup, behi
     val streamMode = if (behindText) PDPageContentStream.AppendMode.PREPEND else PDPageContentStream.AppendMode.APPEND
     PDPageContentStream(document, page, streamMode, true, true).use { stream ->
         stream.setLineWidth(mark.width.coerceIn(0.5f, 20f))
-        val c = android.graphics.Color.valueOf(mark.color)
         val red = android.graphics.Color.red(mark.color)
         val green = android.graphics.Color.green(mark.color)
         val blue = android.graphics.Color.blue(mark.color)
@@ -403,9 +406,9 @@ private fun drawMarkup(document: PDDocument, page: PDPage, mark: PdfMarkup, behi
                     val angle = kotlin.math.atan2(y2 - y1, x2 - x1)
                     val head = 12f
                     stream.moveTo(x2, y2)
-                    stream.lineTo(x2 - head * kotlin.math.cos(angle - 0.5).toFloat(), y2 - head * kotlin.math.sin(angle - 0.5).toFloat())
+                    stream.lineTo(x2 - head * kotlin.math.cos(angle - 0.5f).toFloat(), y2 - head * kotlin.math.sin(angle - 0.5f).toFloat())
                     stream.moveTo(x2, y2)
-                    stream.lineTo(x2 - head * kotlin.math.cos(angle + 0.5).toFloat(), y2 - head * kotlin.math.sin(angle + 0.5).toFloat())
+                    stream.lineTo(x2 - head * kotlin.math.cos(angle + 0.5f).toFloat(), y2 - head * kotlin.math.sin(angle + 0.5f).toFloat())
                     stream.stroke()
                 }
                 "Rectangle" -> { stream.addRect(min(x1, x2), min(y1, y2), max(2f, abs(x2 - x1)), max(2f, abs(y2 - y1))); stream.stroke() }
