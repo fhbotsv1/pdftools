@@ -197,6 +197,8 @@ private fun PdfToolsApp() {
                 }
             } else if (selectedTool!!.name == "Images to PDF") {
                 ImagesToPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "Web to PDF") {
+                WebToPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
