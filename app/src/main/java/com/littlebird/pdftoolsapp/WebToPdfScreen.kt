@@ -9,6 +9,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebSettings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -53,6 +54,8 @@ fun WebToPdfScreen(
     var pageLoaded by remember { mutableStateOf(false) }
     var progress by remember { mutableIntStateOf(0) }
     var pageTitle by remember { mutableStateOf("Webpage preview") }
+    var desktopMode by remember { mutableStateOf(false) }
+    var includeHeaderFooter by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     fun loadPage() {
@@ -89,19 +92,25 @@ fun WebToPdfScreen(
         }
         try {
             val printManager = activity.getSystemService(Context.PRINT_SERVICE) as PrintManager
-            val adapter = currentWebView.createPrintDocumentAdapter(
-                pageTitle.ifBlank { "Webpage" }.take(60)
-            )
+            val printTitle = pageTitle.ifBlank { "Webpage" }.take(60)
             val attributes = PrintAttributes.Builder()
                 .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
                 .setResolution(PrintAttributes.Resolution("pdf", "PDF", 300, 300))
                 .setMinMargins(PrintAttributes.Margins(1000, 1000, 1000, 1000))
                 .build()
-            printManager.print(
-                pageTitle.ifBlank { "Webpage" }.take(60),
-                adapter,
-                attributes
-            )
+            val script = if (includeHeaderFooter) {
+                "document.getElementById('__webtopdf_hide_chrome')?.remove();" 
+            } else {
+                "(function(){var old=document.getElementById('__webtopdf_hide_chrome');if(old)old.remove();var s=document.createElement('style');s.id='__webtopdf_hide_chrome';s.textContent='header,footer,[role=\\\"banner\\\"],[role=\\\"contentinfo\\\"],#header,#footer,.header,.footer{display:none!important}';document.head.appendChild(s);})();"
+            }
+            currentWebView.evaluateJavascript(script) {
+                try {
+                    val adapter = currentWebView.createPrintDocumentAdapter(printTitle)
+                    printManager.print(printTitle, adapter, attributes)
+                } catch (exception: Exception) {
+                    errorMessage = "Could not open PDF printing: ${exception.localizedMessage ?: "unknown error"}"
+                }
+            }
         } catch (exception: Exception) {
             errorMessage = "Could not open PDF printing: ${exception.localizedMessage ?: "unknown error"}"
         }
@@ -207,7 +216,57 @@ fun WebToPdfScreen(
             )
         }
 
-        Spacer(Modifier.height(8.dp))
+        if (pageLoaded && !isLoading) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = WebPdfSurface)
+            ) {
+                Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                    Text("Website layout", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(8.dp))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = {
+                                if (desktopMode) {
+                                    desktopMode = false
+                                    webView?.settings?.userAgentString = WebSettings.getDefaultUserAgent(context)
+                                    webView?.settings?.useWideViewPort = true
+                                    webView?.settings?.loadWithOverviewMode = true
+                                    webView?.reload()
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = if (!desktopMode) WebPdfAccent else Color(0xFF303B4D)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) { Text("Mobile", color = Color.White) }
+                        Button(
+                            onClick = {
+                                if (!desktopMode) {
+                                    desktopMode = true
+                                    webView?.settings?.userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+                                    webView?.settings?.useWideViewPort = true
+                                    webView?.settings?.loadWithOverviewMode = true
+                                    webView?.reload()
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = if (desktopMode) WebPdfAccent else Color(0xFF303B4D)),
+                            shape = RoundedCornerShape(10.dp)
+                        ) { Text("Desktop", color = Color.White) }
+                    }
+                    Row(Modifier.fillMaxWidth().padding(top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = includeHeaderFooter,
+                            onCheckedChange = { includeHeaderFooter = it },
+                            colors = CheckboxDefaults.colors(checkedColor = WebPdfAccent, uncheckedColor = WebPdfMuted, checkmarkColor = Color.White)
+                        )
+                        Text("Include website header and footer in PDF", color = Color.White, fontSize = 12.sp)
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
 
         Card(
             modifier = Modifier.weight(1f).fillMaxWidth(),
