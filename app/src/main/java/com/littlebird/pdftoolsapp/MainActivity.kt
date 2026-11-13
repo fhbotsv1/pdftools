@@ -50,6 +50,7 @@ private val pdfTools = listOf(
     PdfTool("Compress PDF", "Reduce PDF file size", "⇣", "Edit"),
     PdfTool("To Image / Extract", "Convert PDF pages or extract embedded images", "▣", "Edit"),
     PdfTool("PDF to Text", "Extract selectable text from a PDF", "≡", "Edit"),
+    PdfTool("OCR PDF", "Recognise text in scanned PDF pages", "⌕", "Edit"),
     PdfTool("Add Watermark", "Place text or an image over PDF pages", "◇", "Annotate"),
     PdfTool("Add Page Number", "Insert page numbers into PDF pages", "#", "Annotate"),
     PdfTool("Add Password", "Protect a PDF with a password", "🔒", "Secure"),
@@ -215,6 +216,8 @@ private fun PdfToolsApp() {
                 PdfImageExtractScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "PDF to Text") {
                 PdfToTextScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "OCR PDF") {
+                OcrPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
