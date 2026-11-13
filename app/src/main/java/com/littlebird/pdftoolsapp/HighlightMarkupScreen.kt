@@ -343,7 +343,7 @@ private fun FlowRowCompat(items: List<String>, selected: String, onSelect: (Stri
     }
 }
 
-private fun drawMarkupPreview(mark: PdfMarkup, width: Float, height: Float) {
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawMarkupPreview(mark: PdfMarkup, width: Float, height: Float) {
     val color = Color(mark.color)
     val pts = mark.points
     if (pts.isEmpty()) return
