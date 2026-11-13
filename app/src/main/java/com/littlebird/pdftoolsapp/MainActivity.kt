@@ -41,7 +41,6 @@ private data class PdfTool(
 
 private val pdfTools = listOf(
     PdfTool("Images to PDF", "Combine photos and images into a PDF", "▧", "Create"),
-    PdfTool("Text to PDF", "Turn typed text into a PDF document", "T", "Create"),
     PdfTool("Web to PDF", "Save a web page as a PDF", "◎", "Create"),
     PdfTool("Word to PDF", "Convert Word documents into PDF", "W", "Create"),
     PdfTool("Merge PDF", "Combine multiple PDF files", "⊕", "Edit"),
