@@ -314,7 +314,7 @@ private fun AnnotatePagePreview(
             if (watermarkEnabled && watermarkText.isNotBlank()) {
                 Text(watermarkText, color = Color(0xFF9A9A9A), fontSize = (watermarkSize * scale).coerceIn(7f, 42f).sp,
                     fontWeight = FontWeight.Bold, maxLines = 1,
-                    modifier = Modifier.offset(x = maxWidth * watermarkX, y = previewHeight * watermarkY).graphicsLayer(rotationZ = 45f)
+                    modifier = Modifier.offset(x = previewWidth * watermarkX, y = previewHeight * watermarkY).graphicsLayer(rotationZ = 45f)
                         .pointerInput(preview.pageWidth, preview.pageHeight) {
                             detectDragGestures { change, drag ->
                                 change.consume()
@@ -324,7 +324,7 @@ private fun AnnotatePagePreview(
             }
             if (pageNumberEnabled && pageNumberText.isNotBlank()) {
                 Text(pageNumberText, color = Color(0xFF444444), fontSize = (pageNumberSize * scale).coerceIn(6f, 24f).sp, maxLines = 1,
-                    modifier = Modifier.offset(x = maxWidth * pageNumberX, y = previewHeight * pageNumberY)
+                    modifier = Modifier.offset(x = previewWidth * pageNumberX, y = previewHeight * pageNumberY)
                         .pointerInput(preview.pageWidth, preview.pageHeight) {
                             detectDragGestures { change, drag ->
                                 change.consume()
