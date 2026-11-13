@@ -242,6 +242,21 @@ fun PdfToTextScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 }
             }
 
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF3B3021))
+            ) {
+                Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                    Text("Important: selectable-text PDFs only", color = Color(0xFFFFD18A), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "This tool extracts text from digitally created PDFs, such as Word to PDF files. It will not read text that exists only inside scanned pages or photos. For scanned/image PDFs, use the separate OCR PDF tool under Edit.",
+                        color = Color(0xFFE5D8C4), fontSize = 11.sp, lineHeight = 16.sp
+                    )
+                }
+            }
+
             if (sourceUri != null) {
                 Spacer(Modifier.height(8.dp))
                 Row(
