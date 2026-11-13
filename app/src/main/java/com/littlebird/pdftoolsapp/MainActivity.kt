@@ -213,6 +213,8 @@ private fun PdfToolsApp() {
                 CompressPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "PDF to Image / Extract") {
                 PdfImageExtractScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "PDF to Text") {
+                PdfToTextScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
