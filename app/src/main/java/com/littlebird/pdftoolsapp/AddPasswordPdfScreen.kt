@@ -135,8 +135,8 @@ fun AddPasswordPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 enteredPassword,
                                 permissions
                             ).apply {
-                                encryptionKeyLength = 128
-                                isPreferAES = true
+                                setEncryptionKeyLength(128)
+                                setPreferAES(true)
                             }
                             document.protect(policy)
                             ByteArrayOutputStream().use { output ->
