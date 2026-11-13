@@ -276,20 +276,20 @@ fun CutPageScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     Text("Enter crop margins (mm)", color = CutPageMuted, fontSize = 12.sp)
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CropMarginField("Top", currentMargins.top, !isWorking && pageCount > 0) {
-                            updateMargins { it.copy(top = it) }
+                        CropMarginField("Top", currentMargins.top, !isWorking && pageCount > 0) { value ->
+                            updateMargins { margins -> margins.copy(top = value) }
                         }
-                        CropMarginField("Bottom", currentMargins.bottom, !isWorking && pageCount > 0) {
-                            updateMargins { it.copy(bottom = it) }
+                        CropMarginField("Bottom", currentMargins.bottom, !isWorking && pageCount > 0) { value ->
+                            updateMargins { margins -> margins.copy(bottom = value) }
                         }
                     }
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        CropMarginField("Left", currentMargins.left, !isWorking && pageCount > 0) {
-                            updateMargins { it.copy(left = it) }
+                        CropMarginField("Left", currentMargins.left, !isWorking && pageCount > 0) { value ->
+                            updateMargins { margins -> margins.copy(left = value) }
                         }
-                        CropMarginField("Right", currentMargins.right, !isWorking && pageCount > 0) {
-                            updateMargins { it.copy(right = it) }
+                        CropMarginField("Right", currentMargins.right, !isWorking && pageCount > 0) { value ->
+                            updateMargins { margins -> margins.copy(right = value) }
                         }
                     }
                     Spacer(Modifier.height(6.dp))
