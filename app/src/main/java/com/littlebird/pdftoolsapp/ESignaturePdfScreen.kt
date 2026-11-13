@@ -6,9 +6,12 @@ import android.graphics.BitmapFactory
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.net.Uri
+import android.graphics.pdf.PdfRenderer
+import android.os.ParcelFileDescriptor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -27,6 +30,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +70,10 @@ fun ESignaturePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var isWorking by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
     var pendingPdf by remember { mutableStateOf<ByteArray?>(null) }
+    var previewBitmap by remember { mutableStateOf<Bitmap?>(null) }
+    var previewPageWidthMm by remember { mutableFloatStateOf(210f) }
+    var previewPageHeightMm by remember { mutableFloatStateOf(297f) }
+    var previewLoading by remember { mutableStateOf(false) }
 
     val saveLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument("application/pdf")
@@ -102,6 +111,7 @@ fun ESignaturePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             sourceName = getESignatureDisplayName(context, uri)
             pageCount = 0
             pageNumber = "1"
+            previewBitmap = null
             status = "Reading PDF…"
             scope.launch {
                 try {
@@ -195,6 +205,36 @@ fun ESignaturePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         return ByteArrayOutputStream().use { output ->
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
             output.toByteArray()
+        }
+    }
+
+    val signaturePreviewBitmap = remember(signatureMode, typedName, canvasRevision, importedBitmap) {
+        runCatching {
+            val bytes = createSignatureBytes()
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        }.getOrNull()
+    }
+
+    LaunchedEffect(sourceUri, pageNumber) {
+        val uri = sourceUri
+        val pageIndex = pageNumber.toIntOrNull()?.minus(1)
+        if (uri != null && pageIndex != null && pageIndex in 0 until pageCount) {
+            previewLoading = true
+            try {
+                val rendered = withContext(Dispatchers.IO) {
+                    renderESignaturePdfPage(context, uri, pageIndex)
+                }
+                previewBitmap = rendered.first
+                previewPageWidthMm = rendered.second
+                previewPageHeightMm = rendered.third
+            } catch (error: Exception) {
+                previewBitmap = null
+                status = "Preview unavailable: ${error.localizedMessage ?: "Could not render this page"}"
+            } finally {
+                previewLoading = false
+            }
+        } else {
+            previewBitmap = null
         }
     }
 
@@ -421,15 +461,82 @@ fun ESignaturePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = ESignatureSurface)) {
                 Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text("3. Position on PDF", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text("3. Live placement preview", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(6.dp))
-                    Text("Measurements are in millimetres. X is from the left edge; Y is from the bottom edge.",
+                    Text("Drag the signature directly on the page. Its position updates as you move it.",
+                        color = ESignatureMuted, fontSize = 11.sp, lineHeight = 16.sp)
+                    Spacer(Modifier.height(10.dp))
+                    when {
+                        previewLoading -> Box(Modifier.fillMaxWidth().height(190.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = ESignatureAccent)
+                        }
+                        previewBitmap != null -> {
+                            val pageImage = previewBitmap!!
+                            val signatureImage = signaturePreviewBitmap
+                            val density = LocalDensity.current
+                            BoxWithConstraints(
+                                Modifier.fillMaxWidth()
+                                    .aspectRatio(pageImage.width.toFloat() / pageImage.height.toFloat())
+                                    .background(Color.White, RoundedCornerShape(6.dp))
+                            ) {
+                                Image(bitmap = pageImage.asImageBitmap(), contentDescription = "PDF page preview",
+                                    modifier = Modifier.fillMaxSize(), contentScale = ContentScale.FillBounds)
+                                if (signatureImage != null) {
+                                    val xValue = (positionX.toFloatOrNull() ?: 20f).coerceIn(0f, previewPageWidthMm)
+                                    val yValue = (positionY.toFloatOrNull() ?: 20f).coerceIn(0f, previewPageHeightMm)
+                                    val widthValue = (signatureWidth.toFloatOrNull() ?: 45f).coerceIn(1f, previewPageWidthMm)
+                                    val widthDp = maxWidth.value * widthValue / previewPageWidthMm
+                                    val heightDp = widthDp * signatureImage.height.toFloat() / signatureImage.width.toFloat()
+                                    val heightMm = widthValue * signatureImage.height.toFloat() / signatureImage.width.toFloat()
+                                    val leftDp = maxWidth.value * xValue / previewPageWidthMm
+                                    val topDp = maxHeight.value *
+                                        (1f - ((yValue + heightMm).coerceAtMost(previewPageHeightMm) / previewPageHeightMm))
+                                    Image(bitmap = signatureImage.asImageBitmap(),
+                                        contentDescription = "Draggable signature preview",
+                                        contentScale = ContentScale.FillBounds,
+                                        modifier = Modifier.offset(x = leftDp.dp, y = topDp.dp)
+                                            .width(widthDp.dp).height(heightDp.dp)
+                                            .pointerInput(previewPageWidthMm, previewPageHeightMm, maxWidth, maxHeight) {
+                                                detectDragGestures { change, dragAmount ->
+                                                    change.consume()
+                                                    val dxDp = with(density) { dragAmount.x.toDp().value }
+                                                    val dyDp = with(density) { dragAmount.y.toDp().value }
+                                                    val nextX = ((positionX.toFloatOrNull() ?: 20f) +
+                                                        dxDp / maxWidth.value * previewPageWidthMm)
+                                                        .coerceIn(0f, (previewPageWidthMm - widthValue).coerceAtLeast(0f))
+                                                    val nextY = ((positionY.toFloatOrNull() ?: 20f) -
+                                                        dyDp / maxHeight.value * previewPageHeightMm)
+                                                        .coerceIn(0f, (previewPageHeightMm - heightMm).coerceAtLeast(0f))
+                                                    positionX = "%.1f".format(java.util.Locale.US, nextX)
+                                                    positionY = "%.1f".format(java.util.Locale.US, nextY)
+                                                }
+                                            })
+                                }
+                            }
+                            Spacer(Modifier.height(6.dp))
+                            Text("Page $pageNumber • Drag the signature to place it",
+                                color = ESignatureMuted, fontSize = 10.sp)
+                        }
+                        sourceUri != null -> Text("Enter a valid page number to preview it.",
+                            color = ESignatureMuted, fontSize = 12.sp)
+                        else -> Text("Select a PDF to see its page preview here.",
+                            color = ESignatureMuted, fontSize = 12.sp)
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(14.dp))
+            Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = ESignatureSurface)) {
+                Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                    Text("4. Fine-tune position", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Spacer(Modifier.height(6.dp))
+                    Text("You can also enter exact measurements. X is from the left edge; Y is from the bottom edge.",
                         color = ESignatureMuted, fontSize = 11.sp, lineHeight = 16.sp)
                     Spacer(Modifier.height(10.dp))
                     OutlinedTextField(value = pageNumber, onValueChange = { pageNumber = it },
                         modifier = Modifier.fillMaxWidth(), label = { Text("PDF page (1–$pageCount)") },
-                        singleLine = true,
-                        colors = eSignatureFieldColors())
+                        singleLine = true, colors = eSignatureFieldColors())
                     Spacer(Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(value = positionX, onValueChange = { positionX = it },
@@ -502,4 +609,40 @@ private fun getESignatureDisplayName(context: Context, uri: Uri): String {
         }
     }
     return name ?: uri.lastPathSegment?.substringAfterLast('/') ?: "PDF document"
+}
+
+
+private fun renderESignaturePdfPage(
+    context: Context,
+    uri: Uri,
+    pageIndex: Int
+): Triple<Bitmap, Float, Float> {
+    val descriptor = context.contentResolver.openFileDescriptor(uri, "r")
+        ?: error("Could not open the selected PDF for preview.")
+    descriptor.use { fileDescriptor ->
+        PdfRenderer(fileDescriptor).use { renderer ->
+            if (pageIndex !in 0 until renderer.pageCount) error("The selected page does not exist.")
+            renderer.openPage(pageIndex).use { page ->
+                val scale = 2
+                val bitmap = Bitmap.createBitmap(
+                    (page.width * scale).coerceAtLeast(1),
+                    (page.height * scale).coerceAtLeast(1),
+                    Bitmap.Config.ARGB_8888
+                )
+                bitmap.eraseColor(android.graphics.Color.WHITE)
+                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+
+                PDFBoxResourceLoader.init(context.applicationContext)
+                val input = context.contentResolver.openInputStream(uri)
+                    ?: error("Could not read PDF page dimensions.")
+                val dimensions = input.use { stream ->
+                    PDDocument.load(stream).use { document ->
+                        val box = document.getPage(pageIndex).mediaBox
+                        Pair(box.width * 25.4f / 72f, box.height * 25.4f / 72f)
+                    }
+                }
+                return Triple(bitmap, dimensions.first, dimensions.second)
+            }
+        }
+    }
 }
