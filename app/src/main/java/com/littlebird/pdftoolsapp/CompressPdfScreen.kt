@@ -2,9 +2,6 @@ package com.littlebird.pdftoolsapp
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Rect
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -368,7 +365,6 @@ private fun compressResources(
                 var bitmap: Bitmap? = null
                 try {
                     bitmap = image.image ?: continue
-                    if (bitmap.hasAlpha()) continue
                     val largestSide = maxOf(bitmap.width, bitmap.height)
                     val resized = if (largestSide > settings.maxImageDimension) {
                         val scale = settings.maxImageDimension.toFloat() / largestSide
