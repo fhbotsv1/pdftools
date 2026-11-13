@@ -51,7 +51,7 @@ private val pdfTools = listOf(
     PdfTool("To Image / Extract", "Convert PDF pages or extract embedded images", "▣", "Edit"),
     PdfTool("PDF to Text", "Extract selectable text from a PDF", "≡", "Edit"),
     PdfTool("OCR PDF", "Recognise text in scanned PDF pages", "⌕", "Edit"),
-    PdfTool("Annotate PDF", "Add a watermark and page numbers to PDF pages", "◇", "Annotate"),
+    PdfTool("Annotate PDF", "Add headers, footers, watermarks and page numbers", "◇", "Annotate"),
     PdfTool("Add Password", "Protect a PDF with a password", "🔒", "Secure"),
     PdfTool("Remove Password", "Remove protection from an accessible PDF", "🔓", "Secure")
 )
@@ -95,7 +95,11 @@ private fun PdfToolsApp() {
                             selected = selectedSection == name && selectedTool == null,
                             onClick = {
                                 selectedSection = name
-                                selectedTool = null
+                                selectedTool = if (name == "Annotate") {
+                                    pdfTools.first { it.name == "Annotate PDF" }
+                                } else {
+                                    null
+                                }
                             },
                             icon = { Text(symbol, fontSize = 21.sp) },
                             label = { Text(name, fontSize = 10.sp) },
