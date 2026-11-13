@@ -45,7 +45,7 @@ private val pdfTools = listOf(
     PdfTool("Word to PDF", "Convert Word documents into PDF", "W", "Create"),
     PdfTool("Merge PDF", "Combine multiple PDF files", "⊕", "Edit"),
     PdfTool("Split PDF", "Separate a PDF into smaller files", "⇱", "Edit"),
-    PdfTool("Reorder / Rotate Pages", "Change page order or orientation", "↻", "Edit"),
+    PdfTool("Reorder / Rotate", "Change page order or orientation", "↻", "Edit"),
     PdfTool("Cut Page", "Crop page margins and visible area", "⌗", "Edit"),
     PdfTool("Compress PDF", "Reduce PDF file size", "⇣", "Edit"),
     PdfTool("Extract Images", "Save images embedded in a PDF", "▣", "Edit"),
