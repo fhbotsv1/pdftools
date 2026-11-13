@@ -150,7 +150,6 @@ fun MetadataEditorScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 info.setAuthor(newAuthor.trim())
                                 info.setSubject(newSubject.trim())
                                 info.setKeywords(newKeywords.trim())
-                                document.documentCatalog.setMetadata(null)
                             }
                             ByteArrayOutputStream().use { output ->
                                 document.save(output)
