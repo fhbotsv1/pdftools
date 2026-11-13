@@ -49,6 +49,7 @@ fun PdfToTextScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var allPagesSelected by remember { mutableStateOf(false) }
     var isWorking by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
+    var pendingExportText by remember { mutableStateOf<String?>(null) }
 
     val savePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("text/plain")
@@ -280,7 +281,7 @@ fun PdfToTextScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 .background(PdfTextSurface, RoundedCornerShape(12.dp))
                                 .clickable(enabled = !isWorking) {
                                     selectedPages = if (index in selectedPages) selectedPages - index else selectedPages + index
-                                    allPagesSelected = selectedPages.size == pageCount
+                                    allPagesSelected = false
                                 }
                                 .padding(9.dp),
                             verticalAlignment = Alignment.CenterVertically
@@ -311,7 +312,7 @@ fun PdfToTextScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 checked = index in selectedPages || allPagesSelected,
                                 onCheckedChange = { checked ->
                                     selectedPages = if (checked) selectedPages + index else selectedPages - index
-                                    allPagesSelected = selectedPages.size == pageCount
+                                    allPagesSelected = false
                                 },
                                 enabled = !isWorking
                             )
@@ -344,7 +345,6 @@ fun PdfToTextScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     }
 }
 
-private var pendingExportText: String? = null
 
 private fun getPdfTextDisplayName(context: Context, uri: Uri): String {
     var name: String? = null
