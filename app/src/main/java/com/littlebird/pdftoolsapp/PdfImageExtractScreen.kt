@@ -80,10 +80,15 @@ fun PdfImageExtractScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     }
                     val savedCount = withContext(Dispatchers.IO) {
                         var count = 0
+                        val treeDocumentId = DocumentsContract.getTreeDocumentId(folderUri)
+                        val parentDocumentUri = DocumentsContract.buildDocumentUriUsingTree(
+                            folderUri,
+                            treeDocumentId
+                        )
                         for (item in exportQueue) {
                             val destination = DocumentsContract.createDocument(
                                 context.contentResolver,
-                                folderUri,
+                                parentDocumentUri,
                                 "image/png",
                                 item.fileName
                             ) ?: error("Could not create ${item.fileName} in the selected folder.")
