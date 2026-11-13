@@ -200,12 +200,12 @@ fun InsertPagesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                                     val drawHeight = imageObject.height * scale
                                                     stream.drawImage(imageObject, (pageWidth - drawWidth) / 2f, (pageHeight - drawHeight) / 2f, drawWidth, drawHeight)
                                                 }
-                                                if (anchor == null) {
-                                                    targetDoc.pages.insertBefore(page, targetDoc.getPage(0))
+                                                if (after == 0) {
+                                                    targetDoc.pages.insertBefore(page, anchor)
                                                 } else {
                                                     targetDoc.pages.insertAfter(page, anchor)
+                                                    anchor = page
                                                 }
-                                                anchor = page
                                             } finally {
                                                 bitmap.recycle()
                                             }
