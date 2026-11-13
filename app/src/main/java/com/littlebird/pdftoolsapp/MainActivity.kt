@@ -48,7 +48,7 @@ private val pdfTools = listOf(
     PdfTool("Reorder / Rotate", "Change page order or orientation", "↻", "Edit"),
     PdfTool("Cut Page", "Crop page margins and visible area", "⌗", "Edit"),
     PdfTool("Compress PDF", "Reduce PDF file size", "⇣", "Edit"),
-    PdfTool("Extract Images", "Save images embedded in a PDF", "▣", "Edit"),
+    PdfTool("PDF to Image / Extract", "Convert PDF pages or extract embedded images", "▣", "Edit"),
     PdfTool("PDF to Text", "Extract selectable text from a PDF", "≡", "Edit"),
     PdfTool("Add Watermark", "Place text or an image over PDF pages", "◇", "Annotate"),
     PdfTool("Add Page Number", "Insert page numbers into PDF pages", "#", "Annotate"),
@@ -211,6 +211,8 @@ private fun PdfToolsApp() {
                 CutPageScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Compress PDF") {
                 CompressPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "PDF to Image / Extract") {
+                PdfImageExtractScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
