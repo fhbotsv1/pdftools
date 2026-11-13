@@ -7,8 +7,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +35,7 @@ private val SplitPdfSurface = Color(0xFF1B2433)
 private val SplitPdfAccent = Color(0xFFEF6262)
 private val SplitPdfMuted = Color(0xFF9AA9BD)
 
+private data class SplitPdfRange(val id: Int, val start: String, val end: String)
 private data class SplitPdfOutput(val fileName: String, val bytes: ByteArray)
 
 @Composable
@@ -42,9 +45,8 @@ fun SplitPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var sourceUri by remember { mutableStateOf<Uri?>(null) }
     var sourceName by remember { mutableStateOf<String?>(null) }
     var pageCount by remember { mutableIntStateOf(0) }
-    var startPage by remember { mutableStateOf("1") }
-    var endPage by remember { mutableStateOf("") }
-    var pagesPerFile by remember { mutableStateOf("1") }
+    var ranges by remember { mutableStateOf(listOf(SplitPdfRange(1, "1", ""))) }
+    var nextRangeId by remember { mutableIntStateOf(2) }
     var isWorking by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf<String?>(null) }
     var outputQueue by remember { mutableStateOf<List<SplitPdfOutput>>(emptyList()) }
@@ -105,29 +107,27 @@ fun SplitPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             uri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
                         )
                     } catch (_: SecurityException) {
-                        // The picker may grant temporary access only.
+                        // Temporary access is sufficient for this session.
                     }
-                    val details = withContext(Dispatchers.IO) {
+                    val count = withContext(Dispatchers.IO) {
                         PDFBoxResourceLoader.init(context.applicationContext)
                         val input = context.contentResolver.openInputStream(uri)
                             ?: error("Could not open the selected PDF.")
                         input.use { stream ->
-                            PDDocument.load(stream).use { document ->
-                                document.numberOfPages
-                            }
+                            PDDocument.load(stream).use { it.numberOfPages }
                         }
                     }
                     sourceUri = uri
                     sourceName = getSplitPdfDisplayName(context, uri)
-                    pageCount = details
-                    startPage = "1"
-                    endPage = details.toString()
-                    pagesPerFile = "1"
-                    status = if (details > 0) "PDF loaded. It contains $details pages." else "This PDF has no pages."
+                    pageCount = count
+                    ranges = listOf(SplitPdfRange(1, "1", count.toString()))
+                    nextRangeId = 2
+                    status = if (count > 0) "PDF loaded. It contains $count pages." else "This PDF has no pages."
                 } catch (error: Exception) {
                     sourceUri = null
                     sourceName = null
                     pageCount = 0
+                    ranges = listOf(SplitPdfRange(1, "1", ""))
                     status = "Could not read PDF: ${error.localizedMessage ?: "Check that the file is a valid, unlocked PDF."}"
                 } finally {
                     isWorking = false
@@ -136,21 +136,49 @@ fun SplitPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
     }
 
+    fun updateRange(id: Int, start: String? = null, end: String? = null) {
+        ranges = ranges.map { range ->
+            if (range.id == id) range.copy(start = start ?: range.start, end = end ?: range.end)
+            else range
+        }
+    }
+
+    fun addRange() {
+        val previousEnd = ranges.lastOrNull()?.end?.toIntOrNull()
+        val suggestedStart = if (previousEnd != null) (previousEnd + 1).coerceAtMost(pageCount.coerceAtLeast(1)) else 1
+        ranges = ranges + SplitPdfRange(nextRangeId, suggestedStart.toString(), pageCount.toString())
+        nextRangeId += 1
+        status = null
+    }
+
     fun splitPdf() {
         val uri = sourceUri ?: return
-        val start = startPage.toIntOrNull()
-        val end = endPage.toIntOrNull()
-        val groupSize = pagesPerFile.toIntOrNull()
-        if (start == null || end == null || groupSize == null ||
-            start < 1 || end < start || end > pageCount || groupSize < 1
-        ) {
-            status = "Enter valid page numbers and a pages-per-file value."
+        if (isWorking) return
+        val parsedRanges = ranges.mapIndexed { index, range ->
+            val start = range.start.toIntOrNull()
+            val end = range.end.toIntOrNull()
+            if (start == null || end == null || start < 1 || end < start || end > pageCount) {
+                status = "Split ${index + 1}: enter a valid start and end page between 1 and $pageCount."
+                return
+            }
+            start to end
+        }
+        if (parsedRanges.isEmpty()) {
+            status = "Add at least one split range."
             return
         }
-        if (isWorking) return
+        val sorted = parsedRanges.sortedBy { it.first }
+        for (i in 1 until sorted.size) {
+            if (sorted[i].first <= sorted[i - 1].second) {
+                status = "Split ranges overlap. Please adjust the start and end pages."
+                return
+            }
+        }
 
         isWorking = true
-        status = "Splitting PDF…"
+        status = "Creating ${parsedRanges.size} split PDF file(s)…"
+        val rangesToProcess = parsedRanges.toList()
+        val baseName = (sourceName ?: "Document").substringBeforeLast('.', sourceName ?: "Document")
         scope.launch {
             try {
                 val outputs = withContext(Dispatchers.IO) {
@@ -160,45 +188,42 @@ fun SplitPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     input.use { stream ->
                         val source = PDDocument.load(stream)
                         try {
-                            val splitter = Splitter()
-                            splitter.setStartPage(start)
-                            splitter.setEndPage(end)
-                            splitter.setSplitAtPage(groupSize)
-                            val documents = splitter.split(source)
-                            try {
-                                documents.mapIndexed { index, document ->
+                            rangesToProcess.mapIndexed { index, (start, end) ->
+                                val splitter = Splitter()
+                                splitter.setStartPage(start)
+                                splitter.setEndPage(end)
+                                splitter.setSplitAtPage(end - start + 1)
+                                val documents = splitter.split(source)
+                                try {
+                                    val document = documents.firstOrNull()
+                                        ?: error("No pages found for Split ${index + 1}.")
                                     try {
                                         val bytes = ByteArrayOutputStream().use { output ->
                                             document.save(output)
                                             output.toByteArray()
                                         }
-                                        val baseName = (sourceName ?: "Document")
-                                            .substringBeforeLast('.', sourceName ?: "Document")
                                         SplitPdfOutput(
-                                            fileName = "${baseName}_part_${index + 1}.pdf",
+                                            fileName = "${baseName}_split_${index + 1}_pages_${start}-${end}.pdf",
                                             bytes = bytes
                                         )
                                     } finally {
-                                        document.close()
+                                        documents.forEach { it.close() }
                                     }
+                                } catch (error: Exception) {
+                                    documents.forEach { runCatching { it.close() } }
+                                    throw error
                                 }
-                            } catch (error: Exception) {
-                                documents.forEach { runCatching { it.close() } }
-                                throw error
                             }
                         } finally {
                             source.close()
                         }
                     }
                 }
-                if (outputs.isEmpty()) {
-                    status = "No pages were available in the selected range."
-                } else {
-                    outputQueue = outputs
-                    totalOutputs = outputs.size
-                    savedOutputs = 0
-                    status = "Choose where to save the first of ${outputs.size} PDF files."
-                }
+                outputQueue = outputs
+                totalOutputs = outputs.size
+                savedOutputs = 0
+                status = if (outputs.isEmpty()) "No split files were created."
+                else "Choose where to save Split 1 of ${outputs.size}."
             } catch (error: Exception) {
                 status = "Could not split PDF: ${error.localizedMessage ?: "Check that the PDF is valid and unlocked."}"
             } finally {
@@ -220,38 +245,7 @@ fun SplitPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 )
                 Column(Modifier.weight(1f)) {
                     Text("Split PDF", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                    Text("Separate pages into multiple PDF files", color = SplitPdfMuted, fontSize = 12.sp)
-                }
-            }
-
-            Spacer(Modifier.height(18.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = SplitPdfSurface)
-            ) {
-                Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text("Choose a PDF file", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(5.dp))
-                    Text(
-                        "Select a PDF to see its page count and choose how to divide it.",
-                        color = SplitPdfMuted, fontSize = 12.sp, lineHeight = 18.sp
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    Button(
-                        onClick = { picker.launch(arrayOf("application/pdf")) },
-                        enabled = !isWorking,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = SplitPdfAccent),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(if (sourceName == null) "Select PDF file" else "Choose another PDF", color = Color.White, fontWeight = FontWeight.Bold)
-                    }
-                    if (sourceName != null) {
-                        Spacer(Modifier.height(10.dp))
-                        Text(sourceName!!, color = Color.White, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        Text("$pageCount pages", color = SplitPdfAccent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    }
+                    Text("Choose custom page ranges for each PDF", color = SplitPdfMuted, fontSize = 12.sp)
                 }
             }
 
@@ -261,77 +255,120 @@ fun SplitPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = SplitPdfSurface)
             ) {
-                Column(Modifier.fillMaxWidth().padding(16.dp)) {
-                    Text("Split settings", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                    Spacer(Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Column(Modifier.weight(1f)) {
-                            Text("Start page", color = SplitPdfMuted, fontSize = 12.sp)
-                            OutlinedTextField(
-                                value = startPage,
-                                onValueChange = { startPage = it.filter(Char::isDigit) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                enabled = pageCount > 0 && !isWorking,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = SplitPdfAccent,
-                                    unfocusedBorderColor = SplitPdfMuted,
-                                    disabledTextColor = SplitPdfMuted
-                                )
-                            )
-                        }
-                        Column(Modifier.weight(1f)) {
-                            Text("End page", color = SplitPdfMuted, fontSize = 12.sp)
-                            OutlinedTextField(
-                                value = endPage,
-                                onValueChange = { endPage = it.filter(Char::isDigit) },
-                                modifier = Modifier.fillMaxWidth(),
-                                singleLine = true,
-                                enabled = pageCount > 0 && !isWorking,
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedTextColor = Color.White,
-                                    unfocusedTextColor = Color.White,
-                                    focusedBorderColor = SplitPdfAccent,
-                                    unfocusedBorderColor = SplitPdfMuted,
-                                    disabledTextColor = SplitPdfMuted
-                                )
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Text("Pages per output PDF", color = SplitPdfMuted, fontSize = 12.sp)
-                    OutlinedTextField(
-                        value = pagesPerFile,
-                        onValueChange = { pagesPerFile = it.filter(Char::isDigit) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        enabled = pageCount > 0 && !isWorking,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = SplitPdfAccent,
-                            unfocusedBorderColor = SplitPdfMuted,
-                            disabledTextColor = SplitPdfMuted
-                        )
-                    )
+                Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                    Text("Choose a PDF file", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Example: pages 1–12 with 3 pages per file creates four PDFs. Use 1 to save every page as a separate PDF.",
-                        color = SplitPdfMuted, fontSize = 11.sp, lineHeight = 16.sp
-                    )
+                    Button(
+                        onClick = { picker.launch(arrayOf("application/pdf")) },
+                        enabled = !isWorking && outputQueue.isEmpty(),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = SplitPdfAccent),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(if (sourceName == null) "Select PDF file" else "Choose another PDF", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    if (sourceName != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(sourceName!!, color = Color.White, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text("$pageCount pages", color = SplitPdfAccent, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
 
-            Spacer(Modifier.weight(1f))
-            if (status != null) {
-                Text(status!!, color = SplitPdfMuted, fontSize = 12.sp, lineHeight = 17.sp)
-                Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Custom split ranges", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                    Text("Each range becomes a separate PDF", color = SplitPdfMuted, fontSize = 11.sp)
+                }
+                OutlinedButton(
+                    onClick = { addRange() },
+                    enabled = pageCount > 0 && !isWorking && outputQueue.isEmpty(),
+                    shape = RoundedCornerShape(10.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text("+ Add Split", color = SplitPdfAccent, fontWeight = FontWeight.Bold)
+                }
             }
+
+            Spacer(Modifier.height(8.dp))
+            Column(
+                modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ranges.forEachIndexed { index, range ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = CardDefaults.cardColors(containerColor = SplitPdfSurface)
+                    ) {
+                        Column(Modifier.fillMaxWidth().padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Split ${index + 1}", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                Spacer(Modifier.weight(1f))
+                                if (ranges.size > 1) {
+                                    Text(
+                                        "Remove",
+                                        color = SplitPdfAccent,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.clickable(enabled = !isWorking && outputQueue.isEmpty()) {
+                                            ranges = ranges.filterNot { it.id == range.id }
+                                        }.padding(4.dp)
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(10.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                Column(Modifier.weight(1f)) {
+                                    Text("Start page", color = SplitPdfMuted, fontSize = 11.sp)
+                                    OutlinedTextField(
+                                        value = range.start,
+                                        onValueChange = { updateRange(range.id, start = it.filter(Char::isDigit)) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        enabled = pageCount > 0 && !isWorking && outputQueue.isEmpty(),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedBorderColor = SplitPdfAccent,
+                                            unfocusedBorderColor = SplitPdfMuted,
+                                            disabledTextColor = SplitPdfMuted
+                                        )
+                                    )
+                                }
+                                Column(Modifier.weight(1f)) {
+                                    Text("End page", color = SplitPdfMuted, fontSize = 11.sp)
+                                    OutlinedTextField(
+                                        value = range.end,
+                                        onValueChange = { updateRange(range.id, end = it.filter(Char::isDigit)) },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        singleLine = true,
+                                        enabled = pageCount > 0 && !isWorking && outputQueue.isEmpty(),
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        colors = OutlinedTextFieldDefaults.colors(
+                                            focusedTextColor = Color.White,
+                                            unfocusedTextColor = Color.White,
+                                            focusedBorderColor = SplitPdfAccent,
+                                            unfocusedBorderColor = SplitPdfMuted,
+                                            disabledTextColor = SplitPdfMuted
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                if (pageCount == 0) {
+                    Text("Select a PDF first to configure its split ranges.", color = SplitPdfMuted, fontSize = 12.sp)
+                }
+            }
+
+            if (status != null) {
+                Spacer(Modifier.height(8.dp))
+                Text(status!!, color = SplitPdfMuted, fontSize = 12.sp, lineHeight = 17.sp)
+            }
+            Spacer(Modifier.height(10.dp))
             Button(
                 onClick = { splitPdf() },
                 enabled = sourceUri != null && pageCount > 0 && !isWorking && outputQueue.isEmpty(),
@@ -347,7 +384,7 @@ fun SplitPdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     Spacer(Modifier.width(10.dp))
                     Text("Please wait…", color = Color.White, fontWeight = FontWeight.Bold)
                 } else {
-                    Text("Split PDF", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Create ${ranges.size} PDF file(s)", color = Color.White, fontWeight = FontWeight.Bold)
                 }
             }
         }
