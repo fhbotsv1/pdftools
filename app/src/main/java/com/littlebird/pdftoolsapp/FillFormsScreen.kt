@@ -136,7 +136,7 @@ fun FillFormsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                                 label = field.partialName ?: name.substringAfterLast('.'),
                                                 type = type,
                                                 value = value,
-                                                options = options,
+                                                options = options.toList(),
                                                 readOnly = field.isReadOnly
                                             )
                                         )
