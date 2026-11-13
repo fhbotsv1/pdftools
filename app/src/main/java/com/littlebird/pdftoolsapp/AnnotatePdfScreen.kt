@@ -309,6 +309,13 @@ private fun AnnotatePagePreview(
         val pageAspect = preview.pageWidth / preview.pageHeight
         val previewHeight = previewWidth / pageAspect
         val scale = previewWidth.value / preview.pageWidth
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val previewWidthPx = with(density) { previewWidth.toPx() }
+        val previewHeightPx = with(density) { previewHeight.toPx() }
+        val latestWatermarkX by rememberUpdatedState(watermarkX)
+        val latestWatermarkY by rememberUpdatedState(watermarkY)
+        val latestPageNumberX by rememberUpdatedState(pageNumberX)
+        val latestPageNumberY by rememberUpdatedState(pageNumberY)
         Box(Modifier.fillMaxWidth().height(previewHeight)) {
             Image(preview.bitmap.asImageBitmap(), "Selected PDF page preview", Modifier.fillMaxSize())
             if (watermarkEnabled && watermarkText.isNotBlank()) {
@@ -318,7 +325,7 @@ private fun AnnotatePagePreview(
                         .pointerInput(preview.pageWidth, preview.pageHeight) {
                             detectDragGestures { change, drag ->
                                 change.consume()
-                                onWatermarkPosition((watermarkX + drag.x / size.width).coerceIn(0f, 0.88f), (watermarkY + drag.y / size.height).coerceIn(0f, 0.94f))
+                                onWatermarkPosition((latestWatermarkX + drag.x / previewWidthPx).coerceIn(0f, 0.88f), (latestWatermarkY + drag.y / previewHeightPx).coerceIn(0f, 0.94f))
                             }
                         })
             }
@@ -328,7 +335,7 @@ private fun AnnotatePagePreview(
                         .pointerInput(preview.pageWidth, preview.pageHeight) {
                             detectDragGestures { change, drag ->
                                 change.consume()
-                                onPageNumberPosition((pageNumberX + drag.x / size.width).coerceIn(0f, 0.9f), (pageNumberY + drag.y / size.height).coerceIn(0f, 0.97f))
+                                onPageNumberPosition((latestPageNumberX + drag.x / previewWidthPx).coerceIn(0f, 0.9f), (latestPageNumberY + drag.y / previewHeightPx).coerceIn(0f, 0.97f))
                             }
                         })
             }
