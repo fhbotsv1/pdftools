@@ -209,6 +209,8 @@ private fun PdfToolsApp() {
                 ReorderRotatePdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Cut Page") {
                 CutPageScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "Compress PDF") {
+                CompressPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
