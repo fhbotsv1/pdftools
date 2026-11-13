@@ -45,6 +45,7 @@ private val pdfTools = listOf(
     PdfTool("Word to PDF", "Convert Word documents into PDF", "W", "Create"),
     PdfTool("Merge PDF", "Combine multiple PDF files", "⊕", "Edit"),
     PdfTool("Delete Pages", "Remove selected pages from a PDF", "✕", "Edit"),
+    PdfTool("Insert Pages", "Add blank pages, PDFs or images", "＋", "Edit"),
     PdfTool("Split PDF", "Separate a PDF into smaller files", "⇱", "Edit"),
     PdfTool("Reorder / Rotate", "Change page order or orientation", "↻", "Edit"),
     PdfTool("Cut Page", "Crop page margins and visible area", "⌗", "Edit"),
@@ -207,6 +208,8 @@ private fun PdfToolsApp() {
                 WebToPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Word to PDF") {
                 WordToPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "Insert Pages") {
+                InsertPagesScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Delete Pages") {
                 DeletePagesScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Merge PDF") {
