@@ -24,8 +24,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import org.apache.pdfbox.multipdf.PDFMergerUtility
-import org.apache.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
+import com.tom_roush.pdfbox.pdmodel.PDDocument
 import java.io.ByteArrayOutputStream
 
 private val MergePdfBackground = Color(0xFF101522)
