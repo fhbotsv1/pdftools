@@ -4,8 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Paint
-import android.graphics.Rect
-import android.graphics.RectF
 import android.graphics.Typeface
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -42,7 +40,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
-import kotlin.math.min
 
 private val ESignatureBackground = Color(0xFF101522)
 private val ESignatureSurface = Color(0xFF1B2433)
@@ -358,8 +355,7 @@ fun ESignaturePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                         }
                                     )
                                 }) {
-                                    @Suppress("UNUSED_EXPRESSION")
-                                    canvasRevision
+                                    canvasRevision.hashCode()
                                     strokes.forEach { points ->
                                         if (points.isNotEmpty()) {
                                             val path = Path().apply {
