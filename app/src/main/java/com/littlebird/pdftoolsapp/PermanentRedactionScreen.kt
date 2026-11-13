@@ -107,8 +107,8 @@ fun PermanentRedactionScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
                                     PdfRenderer(pfd).use { renderer ->
                                         for (index in 0 until renderer.pageCount) {
                                             renderer.openPage(index).use { page ->
-                                                val scale = min(2.0f, min(2600f / page.width, 3400f / page.height))
-                                                    .coerceAtLeast(1.0f)
+                                                val scale = min(2.0f, min(2600f / page.width.toFloat(), 3400f / page.height.toFloat()))
+                                                    .coerceAtLeast(0.01f)
                                                 val width = (page.width * scale).toInt().coerceAtLeast(1)
                                                 val height = (page.height * scale).toInt().coerceAtLeast(1)
                                                 val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -459,7 +459,8 @@ private fun renderRedactionPage(context: Context, uri: Uri, index: Int): Pair<Bi
         PdfRenderer(pfd).use { renderer ->
             require(index in 0 until renderer.pageCount) { "Page number is out of range." }
             renderer.openPage(index).use { page ->
-                val scale = min(1.6f, min(1800f / page.width, 2400f / page.height)).coerceAtLeast(1f)
+                val scale = min(1.6f, min(1800f / page.width.toFloat(), 2400f / page.height.toFloat()))
+                    .coerceAtLeast(0.01f)
                 val bitmap = Bitmap.createBitmap(
                     (page.width * scale).toInt().coerceAtLeast(1),
                     (page.height * scale).toInt().coerceAtLeast(1),
