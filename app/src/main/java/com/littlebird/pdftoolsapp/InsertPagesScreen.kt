@@ -153,8 +153,10 @@ fun InsertPagesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                         repeat(count) {
                                             val blankPage = PDPage(PDRectangle.A4)
                                             if (after == 0) targetDoc.pages.insertBefore(blankPage, anchor)
-                                            else targetDoc.pages.insertAfter(blankPage, anchor)
-                                            anchor = blankPage
+                                            else {
+                                                targetDoc.pages.insertAfter(blankPage, anchor)
+                                                anchor = blankPage
+                                            }
                                         }
                                     }
                                     "Another PDF" -> {
@@ -169,8 +171,10 @@ fun InsertPagesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                                     val newPage = targetDoc.importPage(sourcePage)
                                                     targetDoc.pages.remove(newPage)
                                                     if (after == 0) targetDoc.pages.insertBefore(newPage, anchor)
-                                                    else targetDoc.pages.insertAfter(newPage, anchor)
-                                                    anchor = newPage
+                                                    else {
+                                                        targetDoc.pages.insertAfter(newPage, anchor)
+                                                        anchor = newPage
+                                                    }
                                                 }
                                             }
                                         }
