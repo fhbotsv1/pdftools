@@ -146,7 +146,7 @@ private fun PdfToolsApp() {
                         ) {
                             Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("15 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("17 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     Spacer(Modifier.height(6.dp))
                                     Text("Create, edit and protect your PDFs.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                                 }
