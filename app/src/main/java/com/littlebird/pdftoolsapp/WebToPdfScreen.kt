@@ -10,6 +10,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -60,7 +61,6 @@ fun WebToPdfScreen(
     var pageLoaded by remember { mutableStateOf(false) }
     var progress by remember { mutableIntStateOf(0) }
     var pageTitle by remember { mutableStateOf("Webpage preview") }
-    var loadedUrl by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     fun loadPage() {
@@ -138,7 +138,7 @@ fun WebToPdfScreen(
                 "‹",
                 color = Color.White,
                 fontSize = 34.sp,
-                modifier = Modifier.padding(end = 14.dp)
+                modifier = Modifier.padding(end = 14.dp).clickable { onBack() }
             )
             Column(Modifier.weight(1f)) {
                 Text("Web to PDF", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
@@ -249,7 +249,6 @@ fun WebToPdfScreen(
                             override fun onPageFinished(view: WebView?, pageUrl: String?) {
                                 isLoading = false
                                 pageLoaded = true
-                                loadedUrl = pageUrl.orEmpty()
                                 pageTitle = view?.title?.takeIf { it.isNotBlank() } ?: "Webpage"
                             }
 
