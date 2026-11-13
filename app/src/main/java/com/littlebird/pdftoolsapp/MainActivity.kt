@@ -48,6 +48,7 @@ private val pdfTools = listOf(
     PdfTool("Insert Pages", "Add blank pages, PDFs or images", "＋", "Edit"),
     PdfTool("Highlight & Markup", "Highlight, draw and add notes to PDF pages", "✎", "Edit"),
     PdfTool("Fill Forms", "Complete interactive PDF form fields", "☑", "Edit"),
+    PdfTool("Metadata Editor", "Edit or remove PDF document information", "ⓘ", "Edit"),
     PdfTool("Split PDF", "Separate a PDF into smaller files", "⇱", "Edit"),
     PdfTool("Reorder / Rotate", "Change page order or orientation", "↻", "Edit"),
     PdfTool("Cut Page", "Crop page margins and visible area", "⌗", "Edit"),
@@ -148,7 +149,7 @@ private fun PdfToolsApp() {
                         ) {
                             Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("19 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("20 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     Spacer(Modifier.height(6.dp))
                                     Text("Create, edit and protect your PDFs.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                                 }
@@ -216,6 +217,8 @@ private fun PdfToolsApp() {
                 HighlightMarkupScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Fill Forms") {
                 FillFormsScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "Metadata Editor") {
+                MetadataEditorScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Delete Pages") {
                 DeletePagesScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Merge PDF") {
