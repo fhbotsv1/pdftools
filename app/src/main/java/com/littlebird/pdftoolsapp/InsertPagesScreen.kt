@@ -149,9 +149,12 @@ fun InsertPagesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                 when (mode) {
                                     "Blank pages" -> {
                                         require(count in 1..100) { "Choose between 1 and 100 blank pages." }
-                                        repeat(count) { targetDoc.pages.insertAfter(PDPage(PDRectangle.A4), targetDoc.getPage(after.coerceAtMost(targetDoc.numberOfPages - 1))) }
-                                        if (after == 0) {
-                                            repeat(count) { targetDoc.pages.remove(targetDoc.numberOfPages - 1); targetDoc.pages.insertBefore(PDPage(PDRectangle.A4), targetDoc.getPage(0)) }
+                                        var anchor = if (after == 0) targetDoc.getPage(0) else targetDoc.getPage(after - 1)
+                                        repeat(count) {
+                                            val blankPage = PDPage(PDRectangle.A4)
+                                            if (after == 0) targetDoc.pages.insertBefore(blankPage, anchor)
+                                            else targetDoc.pages.insertAfter(blankPage, anchor)
+                                            anchor = blankPage
                                         }
                                     }
                                     "Another PDF" -> {
@@ -161,15 +164,13 @@ fun InsertPagesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                         sourceInput.use { sourceStream ->
                                             PDDocument.load(sourceStream).use { sourceDoc ->
                                                 val imported = (0 until sourceDoc.numberOfPages).map { sourceDoc.getPage(it) }
-                                                if (after == 0) {
-                                                    imported.forEach { targetDoc.importPage(it).also { page -> targetDoc.pages.remove(page); targetDoc.pages.insertBefore(page, targetDoc.getPage(0)) } }
-                                                } else {
-                                                    var anchor = targetDoc.getPage(after - 1)
-                                                    imported.forEach { sourcePage ->
-                                                        val newPage = targetDoc.importPage(sourcePage)
-                                                        targetDoc.pages.insertAfter(newPage, anchor)
-                                                        anchor = newPage
-                                                    }
+                                                var anchor = if (after == 0) targetDoc.getPage(0) else targetDoc.getPage(after - 1)
+                                                imported.forEach { sourcePage ->
+                                                    val newPage = targetDoc.importPage(sourcePage)
+                                                    targetDoc.pages.remove(newPage)
+                                                    if (after == 0) targetDoc.pages.insertBefore(newPage, anchor)
+                                                    else targetDoc.pages.insertAfter(newPage, anchor)
+                                                    anchor = newPage
                                                 }
                                             }
                                         }
