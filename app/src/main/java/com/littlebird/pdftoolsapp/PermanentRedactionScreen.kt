@@ -73,10 +73,6 @@ fun PermanentRedactionScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
     var status by remember { mutableStateOf<String?>(null) }
     var showConfirmation by remember { mutableStateOf(false) }
 
-    DisposableEffect(previewBitmap) {
-        onDispose { previewBitmap?.recycle() }
-    }
-
     suspend fun loadPreview(uri: Uri, index: Int) {
         val result = withContext(Dispatchers.IO) { renderRedactionPage(context, uri, index) }
         previewBitmap = result.first
