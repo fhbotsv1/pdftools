@@ -420,13 +420,11 @@ private fun extractImagesFromResources(
             is PDImageXObject -> {
                 try {
                     val bitmap = xObject.image ?: continue
-                    try {
-                        val bytes = ByteArrayOutputStream().use { output ->
-                            bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
-                            output.toByteArray()
-                        }
-                        if (bytes.isNotEmpty()) result.add(bytes)
+                    val bytes = ByteArrayOutputStream().use { output ->
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+                        output.toByteArray()
                     }
+                    if (bytes.isNotEmpty()) result.add(bytes)
                 } catch (_: Exception) {
                     // Skip images that PDFBox cannot decode.
                 }
