@@ -305,11 +305,12 @@ private fun AnnotatePagePreview(
     onPageNumberPosition: (Float, Float) -> Unit
 ) {
     BoxWithConstraints(Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp)).background(Color.White)) {
+        val previewWidth = maxWidth
         val pageAspect = preview.pageWidth / preview.pageHeight
-        val previewHeight = maxWidth / pageAspect
+        val previewHeight = previewWidth / pageAspect
+        val scale = previewWidth.value / preview.pageWidth
         Box(Modifier.fillMaxWidth().height(previewHeight)) {
             Image(preview.bitmap.asImageBitmap(), "Selected PDF page preview", Modifier.fillMaxSize())
-            val scale = maxWidth.value / preview.pageWidth
             if (watermarkEnabled && watermarkText.isNotBlank()) {
                 Text(watermarkText, color = Color(0xFF9A9A9A), fontSize = (watermarkSize * scale).coerceIn(7f, 42f).sp,
                     fontWeight = FontWeight.Bold, maxLines = 1,
