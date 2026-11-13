@@ -27,19 +27,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalLifecycleOwner
-import androidx.compose.ui.input.key.*
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.window.Dialog
 import android.view.ViewGroup
-import android.webkit.WebSettings
-import android.widget.FrameLayout
 
 private val WebPdfBackground = Color(0xFF101522)
 private val WebPdfSurface = Color(0xFF1B2433)
