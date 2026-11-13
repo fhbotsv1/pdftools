@@ -136,7 +136,7 @@ fun PdfImageExtractScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     }
                     pageCount = loaded.first
                     thumbnails = loaded.second
-                    selectedPages = (0 until loaded.first).toSet()
+                    selectedPages = emptySet()
                     status = "PDF loaded. Select pages to extract embedded images, or switch to PDF to Image."
                 } catch (error: Exception) {
                     status = "Could not read PDF: ${error.localizedMessage ?: "Unknown error"}"
@@ -204,11 +204,11 @@ fun PdfImageExtractScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                     }
                                 }
                             } else {
-                                val visitedForms = Collections.newSetFromMap(
-                                    IdentityHashMap<PDFormXObject, Boolean>()
-                                )
                                 for (pageIndex in pagesToProcess) {
                                     if (pageIndex !in 0 until document.numberOfPages) continue
+                                    val visitedForms = Collections.newSetFromMap(
+                                        IdentityHashMap<PDFormXObject, Boolean>()
+                                    )
                                     val pageResources = document.getPage(pageIndex).resources
                                     val images = extractImagesFromResources(
                                         pageResources, visitedForms
@@ -426,8 +426,6 @@ private fun extractImagesFromResources(
                             output.toByteArray()
                         }
                         if (bytes.isNotEmpty()) result.add(bytes)
-                    } finally {
-                        bitmap.recycle()
                     }
                 } catch (_: Exception) {
                     // Skip images that PDFBox cannot decode.
