@@ -53,7 +53,8 @@ private val pdfTools = listOf(
     PdfTool("OCR PDF", "Recognise text in scanned PDF pages", "⌕", "Edit"),
     PdfTool("Annotate PDF", "Add headers, footers, watermarks and page numbers", "◇", "Annotate"),
     PdfTool("Add Password", "Protect a PDF with a password", "🔒", "Secure"),
-    PdfTool("Remove Password", "Remove protection from an accessible PDF", "🔓", "Secure")
+    PdfTool("Remove Password", "Remove protection from an accessible PDF", "🔓", "Secure"),
+    PdfTool("E-Signature", "Add a drawn, typed or imported signature to a PDF", "✍", "Secure")
 )
 
 private val sections = listOf(
@@ -143,7 +144,7 @@ private fun PdfToolsApp() {
                         ) {
                             Row(Modifier.fillMaxWidth().padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
-                                    Text("14 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                    Text("15 PDF UTILITIES", color = Color(0xFFFFB4AB), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                                     Spacer(Modifier.height(6.dp))
                                     Text("Create, edit and protect your PDFs.", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Bold)
                                 }
@@ -227,6 +228,8 @@ private fun PdfToolsApp() {
                 AddPasswordPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else if (selectedTool!!.name == "Remove Password") {
                 RemovePasswordPdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
+            } else if (selectedTool!!.name == "E-Signature") {
+                ESignaturePdfScreen(onBack = { selectedTool = null }, modifier = Modifier.padding(padding))
             } else {
                 ToolComingSoonScreen(
                     tool = selectedTool!!,
