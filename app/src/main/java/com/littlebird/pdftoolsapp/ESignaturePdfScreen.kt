@@ -7,7 +7,6 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.net.Uri
 import android.graphics.pdf.PdfRenderer
-import android.os.ParcelFileDescriptor
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -496,7 +495,7 @@ fun ESignaturePdfScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                                         contentScale = ContentScale.FillBounds,
                                         modifier = Modifier.offset(x = leftDp.dp, y = topDp.dp)
                                             .width(widthDp.dp).height(heightDp.dp)
-                                            .pointerInput(previewPageWidthMm, previewPageHeightMm, maxWidth, maxHeight) {
+                                            .pointerInput(previewPageWidthMm, previewPageHeightMm, maxWidth, maxHeight, widthValue, heightMm) {
                                                 detectDragGestures { change, dragAmount ->
                                                     change.consume()
                                                     val dxDp = with(density) { dragAmount.x.toDp().value }
