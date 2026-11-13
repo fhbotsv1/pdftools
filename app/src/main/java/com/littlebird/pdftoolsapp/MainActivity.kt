@@ -48,7 +48,7 @@ private val pdfTools = listOf(
     PdfTool("Reorder / Rotate", "Change page order or orientation", "↻", "Edit"),
     PdfTool("Cut Page", "Crop page margins and visible area", "⌗", "Edit"),
     PdfTool("Compress PDF", "Reduce PDF file size", "⇣", "Edit"),
-    PdfTool("PDF to Image / Extract", "Convert PDF pages or extract embedded images", "▣", "Edit"),
+    PdfTool("To Image / Extract", "Convert PDF pages or extract embedded images", "▣", "Edit"),
     PdfTool("PDF to Text", "Extract selectable text from a PDF", "≡", "Edit"),
     PdfTool("Add Watermark", "Place text or an image over PDF pages", "◇", "Annotate"),
     PdfTool("Add Page Number", "Insert page numbers into PDF pages", "#", "Annotate"),
