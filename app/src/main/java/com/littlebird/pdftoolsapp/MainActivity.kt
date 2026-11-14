@@ -48,18 +48,18 @@ private val pdfTools = listOf(
     PdfTool("Insert Pages", "Add blank pages, PDFs or images", "＋", "Edit"),
     PdfTool("Highlight & Markup", "Highlight, draw and add notes to PDF pages", "✎", "Edit"),
     PdfTool("Fill Forms", "Complete interactive PDF form fields", "☑", "Edit"),
-    PdfTool("Metadata Editor", "Edit or remove PDF document information", "ⓘ", "Edit"),
-    PdfTool("PDF to Word", "Convert PDF text into an editable DOCX file", "W", "Edit"),
-    PdfTool("PDF to Excel", "Extract PDF rows and tables into XLSX", "▦", "Edit"),
-    PdfTool("Permanent Redaction", "Permanently remove selected page areas", "▰", "Edit"),
+    PdfTool("Metadata Editor", "Edit or remove PDF document information", "ⓘ", "Secure"),
+    PdfTool("PDF to Word", "Convert PDF text into an editable DOCX file", "W", "Convert"),
+    PdfTool("PDF to Excel", "Extract PDF rows and tables into XLSX", "▦", "Convert"),
+    PdfTool("Permanent Redaction", "Permanently remove selected page areas", "▰", "Secure"),
     PdfTool("Split PDF", "Separate a PDF into smaller files", "⇱", "Edit"),
     PdfTool("Reorder / Rotate", "Change page order or orientation", "↻", "Edit"),
     PdfTool("Cut Page", "Crop page margins and visible area", "⌗", "Edit"),
     PdfTool("Compress PDF", "Reduce PDF file size", "⇣", "Edit"),
     PdfTool("To Image / Extract", "Convert PDF pages or extract embedded images", "▣", "Edit"),
-    PdfTool("PDF to Text", "Extract selectable text from a PDF", "≡", "Edit"),
-    PdfTool("OCR PDF", "Recognise text in scanned PDF pages", "⌕", "Edit"),
-    PdfTool("Annotate PDF", "Add headers, footers, watermarks and page numbers", "◇", "Annotate"),
+    PdfTool("PDF to Text", "Extract selectable text from a PDF", "≡", "Convert"),
+    PdfTool("OCR PDF", "Recognise text in scanned PDF pages", "⌕", "Convert"),
+    PdfTool("Annotate PDF", "Add headers, footers, watermarks and page numbers", "◇", "Edit"),
     PdfTool("Add Password", "Protect a PDF with a password", "🔒", "Secure"),
     PdfTool("Remove Password", "Remove protection from an accessible PDF", "🔓", "Secure"),
     PdfTool("E-Signature", "Add a drawn, typed or imported signature to a PDF", "✍", "Secure")
@@ -69,7 +69,6 @@ private val sections = listOf(
     "Favorites" to "★",
     "Create" to "＋",
     "Edit" to "✎",
-    "Annotate" to "▤",
     "Secure" to "⬡"
 )
 
@@ -104,11 +103,7 @@ private fun PdfToolsApp() {
                             selected = selectedSection == name && selectedTool == null,
                             onClick = {
                                 selectedSection = name
-                                selectedTool = if (name == "Annotate") {
-                                    pdfTools.first { it.name == "Annotate PDF" }
-                                } else {
-                                    null
-                                }
+                                selectedTool = null
                             },
                             icon = { Text(symbol, fontSize = 21.sp) },
                             label = { Text(name, fontSize = 10.sp) },
@@ -168,9 +163,9 @@ private fun PdfToolsApp() {
                             when (selectedSection) {
                                 "Favorites" -> "Keep the PDF tools you use most close at hand"
                                 "Create" -> "Create PDF files from different sources"
-                                "Edit" -> "Organize, optimize and extract PDF content"
-                                "Annotate" -> "Add useful information to your documents"
-                                else -> "Control access to your PDF documents"
+                                "Edit" -> "Organize, adjust and annotate PDF pages"
+                                "Convert" -> "Convert PDFs into editable and reusable formats"
+                                else -> "Protect, sign and sanitize PDF documents"
                             },
                             color = MutedText, fontSize = 12.sp
                         )
