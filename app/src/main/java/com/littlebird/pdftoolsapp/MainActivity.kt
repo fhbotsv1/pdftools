@@ -56,7 +56,7 @@ private val pdfTools = listOf(
     PdfTool("Reorder / Rotate", "Change page order or orientation", "↻", "Edit"),
     PdfTool("Cut Page", "Crop page margins and visible area", "⌗", "Edit"),
     PdfTool("Compress PDF", "Reduce PDF file size", "⇣", "Edit"),
-    PdfTool("To Image / Extract", "Convert PDF pages or extract embedded images", "▣", "Edit"),
+    PdfTool("PDF to Image / Extract", "Convert PDF pages or extract embedded images", "▣", "Convert"),
     PdfTool("PDF to Text", "Extract selectable text from a PDF", "≡", "Convert"),
     PdfTool("OCR PDF", "Recognise text in scanned PDF pages", "⌕", "Convert"),
     PdfTool("Annotate PDF", "Add headers, footers, watermarks and page numbers", "◇", "Edit"),
@@ -69,6 +69,7 @@ private val sections = listOf(
     "Favorites" to "★",
     "Create" to "＋",
     "Edit" to "✎",
+    "Convert" to "⇄",
     "Secure" to "⬡"
 )
 
